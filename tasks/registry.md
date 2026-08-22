@@ -19,7 +19,7 @@
 | `TASK-20260822-013` | 真实运行环境与联调收口 | Coordinator | `completed` | [task](TASK-20260822-013.md) | [log](../logs/TASK-20260822-013.md) | [result](../results/TASK-20260822-013.md) |
 | `TASK-20260822-014` | 工作英语模拟闭环 | Coordinator | `completed` | [task](TASK-20260822-014.md) | [log](../logs/TASK-20260822-014.md) | [result](../results/TASK-20260822-014.md) |
 | `TASK-20260822-015` | xuebadictAPP GitHub 分支发布 | Coordinator | `completed` | [task](TASK-20260822-015.md) | [log](../logs/TASK-20260822-015.md) | [result](../results/TASK-20260822-015.md) |
-| `TASK-20260822-016` | 重新发布到 Xueba GitHub 仓库 | Coordinator | `in_progress` | [task](TASK-20260822-016.md) | [log](../logs/TASK-20260822-016.md) | [result](../results/TASK-20260822-016.md) |
+| `TASK-20260822-016` | 重新发布到 Xueba GitHub 仓库 | Coordinator | `completed` | [task](TASK-20260822-016.md) | [log](../logs/TASK-20260822-016.md) | [result](../results/TASK-20260822-016.md) |
 
 ## 状态约定
 
