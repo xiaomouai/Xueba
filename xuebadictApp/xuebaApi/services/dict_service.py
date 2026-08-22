@@ -6,15 +6,18 @@ import os
 import json
 import zipfile
 import sqlite3
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from functools import lru_cache
 
 
 class DictService:
     """Dict词库服务类"""
-    
-    DICT_PATH = './dict/book/'
-    DB_PATH = 'lioneng.db'
+
+    # 词库服务可能被 API、脚本或测试从不同工作目录调用，因此不依赖 cwd。
+    BASE_DIR = Path(__file__).resolve().parents[1]
+    DICT_PATH = os.getenv("DICT_PATH", str(BASE_DIR / "dict" / "book"))
+    DB_PATH = os.getenv("DICT_DB_PATH", str(BASE_DIR / "lioneng.db"))
     
     @classmethod
     def get_db_connection(cls):
