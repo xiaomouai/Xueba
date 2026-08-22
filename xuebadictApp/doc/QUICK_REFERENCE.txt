@@ -1,0 +1,235 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║               版本更新系统 - 快速参考                                        ║
+║               API Server: http://app.mty.mingboai.com                       ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+┌─ API 端点 ─────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ 获取最新版本:                                                               │
+│   GET /api/version/app/latest?platform=android                             │
+│   返回: { success: true, data: { version, download_url, changelog, ... } } │
+│                                                                             │
+│ 检查更新:                                                                   │
+│   POST /api/version/app/check                                              │
+│   请求: { current_version, build_number, platform }                        │
+│   返回: { success: true, data: { has_update, latest_version, ... } }       │
+│                                                                             │
+│ 检查兼容性:                                                                 │
+│   POST /api/version/compatibility                                          │
+│   请求: { app_version }                                                    │
+│   返回: { success: true, data: { compatible, message } }                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 关键文件 ─────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ 后端:                                                                       │
+│   • xuebaApi/api/version.py (API 实现)                                      │
+│   • xuebaApi/models/version_model.py (数据模型)                             │
+│                                                                             │
+│ 前端:                                                                       │
+│   • xuebaAPP/lib/utils/settings_helper.dart (API 调用)                      │
+│   • xuebaAPP/lib/utils/auto_update_service.dart (更新服务)                  │
+│   • xuebaAPP/lib/pages/settings_page.dart (UI 集成)                         │
+│                                                                             │
+│ 测试:                                                                       │
+│   • test_version_update.py (后端测试)                                       │
+│   • test_version_update.dart (前端测试框架)                                 │
+│   • test_api_integration.py (集成测试)                                      │
+│   • check_version_system.bat (系统诊断)                                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 版本信息结构 ─────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ API 响应 data 字段:                                                         │
+│                                                                             │
+│   {                                                                         │
+│     "version": "1.2.0",           ← 应用版本                               │
+│     "build_number": 12,           ← 构建号 (快速比较)                      │
+│     "release_date": "2026-02-04", ← 发布日期                               │
+│     "download_url":               ← 下载链接 (包含版本号)                  │
+│       "http://app.mty.mingboai.com/download/v1.2.0/app.apk",              │
+│     "changelog": [                ← 更新内容 (列表)                        │
+│       "新增单词拼读功能",                                                  │
+│       "优化语音评测准确度",                                                │
+│       "修复已知问题",                                                      │
+│       "提升应用性能"                                                       │
+│     ],                                                                      │
+│     "force_update": false,        ← 是否强制更新                           │
+│     "file_size": "25.6 MB",       ← 文件大小                               │
+│     "md5": "abc123def456"         ← MD5 校验值                             │
+│   }                                                                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 关键函数 ─────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ Dart 端:                                                                    │
+│                                                                             │
+│   // 检查更新                                                               │
+│   UpdateCheckResult result = await SettingsHelper.checkForUpdates(version);│
+│   if (result.hasUpdate) {                                                  │
+│     // 显示更新对话框                                                       │
+│     _showUpdateDialog(context, result.versionInfo);                        │
+│   }                                                                         │
+│                                                                             │
+│   // 解析 API 响应                                                          │
+│   VersionInfo info = VersionInfo.fromApiJson(apiData);                     │
+│   // info.version       - 版本号                                           │
+│   // info.downloadUrl   - 下载地址                                         │
+│   // info.releaseNotes  - 更新说明 (Markdown 格式)                         │
+│                                                                             │
+│ Python 端:                                                                  │
+│                                                                             │
+│   # 版本比较                                                                │
+│   result = _compare_versions(v1, v2)                                       │
+│   # 返回: 1 (v1 > v2), -1 (v1 < v2), 0 (v1 == v2)                          │
+│                                                                             │
+│   # 获取最新版本                                                            │
+│   app_ver = AppVersion.query.filter_by(                                    │
+│       platform='android',                                                  │
+│       is_latest=True                                                       │
+│   ).first()                                                                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 测试命令 ─────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ # 后端测试                                                                  │
+│ python test_version_update.py                                              │
+│ 结果: 5/5 通过 ✓                                                           │
+│                                                                             │
+│ # 集成测试                                                                  │
+│ python test_api_integration.py                                             │
+│ 结果: 5/5 通过 ✓                                                           │
+│                                                                             │
+│ # 系统诊断                                                                  │
+│ check_version_system.bat                                                   │
+│ 结果: 所有检查通过 ✓                                                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 常用配置 ─────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ 设置 API 服务器地址:                                                        │
+│   文件: xuebaAPP/lib/utils/settings_helper.dart                             │
+│   行号: 89-90                                                               │
+│   修改: static const String _apiBaseUrl = '...';                           │
+│                                                                             │
+│ 设置检查间隔:                                                               │
+│   文件: xuebaAPP/lib/utils/auto_update_service.dart                         │
+│   行号: 23                                                                  │
+│   修改: static const int _checkIntervalHours = 24;                         │
+│                                                                             │
+│ 设置超时时间:                                                               │
+│   文件: xuebaAPP/lib/utils/settings_helper.dart                             │
+│   行号: 102                                                                 │
+│   修改: .timeout(const Duration(seconds: 10));                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 下载链接规则 ─────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ 必须符合格式:                                                               │
+│   http://app.mty.mingboai.com/download/v{version}/app.apk                  │
+│                                                                             │
+│ 示例:                                                                       │
+│   ✓ http://app.mty.mingboai.com/download/v1.2.0/app.apk                    │
+│   ✓ http://app.mty.mingboai.com/download/v2.0.0/app.apk                    │
+│   ✗ http://app.mty.mingboai.com/download/1.2.0/app.apk (缺少 v)            │
+│   ✗ http://app.mty.mingboai.com/download/v1.3.0/app.apk (版本不符)         │
+│                                                                             │
+│ 验证已通过: download_url 中的版本号与 version 字段相符 ✓                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 错误处理 ─────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ 网络错误:                                                                   │
+│   → 自动 API → GitHub API (备用)                                           │
+│   → 超时: 10 秒                                                             │
+│   → 手动检查: 显示错误                                                      │
+│   → 自动检查: 静默失败                                                      │
+│                                                                             │
+│ 版本号格式错误:                                                             │
+│   → 使用默认值 "1.0.0"                                                     │
+│                                                                             │
+│ 下载失败:                                                                   │
+│   → 提示用户稍后重试                                                        │
+│   → 记录错误日志                                                            │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 流程图 ────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ 用户点击"检查更新"                                                          │
+│   ↓                                                                         │
+│ AutoUpdateService.checkManually()                                          │
+│   ↓                                                                         │
+│ SettingsHelper.checkForUpdates(currentVersion)                             │
+│   ├─ 调用 API: GET /version/app/latest?platform=android                   │
+│   ├─ 解析响应: VersionInfo.fromApiJson()                                   │
+│   ├─ 比较版本: _isNewerVersion()                                           │
+│   └─ 返回: UpdateCheckResult                                               │
+│       ├─ hasUpdate: true/false                                             │
+│       ├─ versionInfo: VersionInfo 对象                                     │
+│       └─ error: 错误信息 (如果有)                                          │
+│   ↓                                                                         │
+│ if (hasUpdate)                                                              │
+│   ├─ 显示更新对话框                                                         │
+│   ├─ 用户选择"立即更新"或"稍后更新"                                        │
+│   └─ if ("立即更新")                                                       │
+│       ├─ UpdateManager.downloadAndInstall()                                │
+│       ├─ 显示下载进度                                                       │
+│       └─ 下载完成 → 自动/手动安装                                          │
+│   else                                                                      │
+│       └─ 显示"已是最新版本"                                                │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ 一键检查 ─────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│ # 快速测试所有功能                                                          │
+│ cd d:\ai-project\xuebadictApp                                              │
+│ check_version_system.bat                                                   │
+│                                                                             │
+│ 检查项:                                                                     │
+│   ✓ Python 环境                                                             │
+│   ✓ 后端文件完整性                                                          │
+│   ✓ 前端文件完整性                                                          │
+│   ✓ 测试文件存在性                                                          │
+│   ✓ 运行测试并报告结果                                                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+总体状态: ✅ 生产就绪
+
+测试覆盖:
+  ✓ 版本比较: 6/6 通过
+  ✓ API 响应: 13/13 字段正确
+  ✓ 集成测试: 5/5 通过
+
+修复内容:
+  ✓ 下载链接版本号修正 (v1.3.2 → v1.2.0)
+  ✓ API 集成完成 (自定义服务器 + GitHub 备用)
+  ✓ 前后端通信验证 ✓
+
+═══════════════════════════════════════════════════════════════════════════════
+
+生成时间: 2026-02-09

@@ -1,0 +1,325 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                        课文学习模块 - 快速开始                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📁 文件结构
+════════════════════════════════════════════════════════════════════════════
+✅ xuebaAPP/lib/pages/lesson_study_page.dart         # 主页面（已实现）
+✅ xuebaAPP/lib/pages/lesson_study_demo.dart         # 演示数据（已实现）
+✅ xuebaAPP/lib/services/lesson_content_service.dart # 服务层（已实现）
+✅ xuebaAPP/lib/pages/home_page.dart                 # 首页集成（已更新）
+
+
+📋 核心功能
+════════════════════════════════════════════════════════════════════════════
+
+单元 → 句子 → 语音朗读
+│
+├─ 单元标题: "Unit 1 Hello!"
+│
+├─ 句子列表:
+│  1. "Hello! Hello! Hello!" → "你好！你好！你好！"
+│  2. "I'm Sarah. I'm Sarah." → "我是萨拉。我是萨拉。"
+│  3. "Hello, Sarah!" → "你好，萨拉！"
+│  ... (共 10+ 句)
+│
+└─ 学习流程:
+   1. 播放英文句子 (TTS)
+   2. 显示中文翻译
+   3. 用户跟读（语音评测）
+   4. 标记完成，进入下一句
+
+
+🎯 使用示例
+════════════════════════════════════════════════════════════════════════════
+
+1️⃣  在首页点击"课文学习"按钮
+
+2️⃣  打开课文学习页面:
+
+    LessonStudyPage(
+      unitTitle: "Unit 1 Hello!",
+      sentences: [
+        SentenceContent(
+          english: "Hello! I'm Sarah.",
+          chinese: "你好！我是萨拉。",
+        ),
+        // ... 更多句子
+      ],
+    )
+
+3️⃣  用户交互:
+    • 点击 [▶ 播放] 听英文
+    • 查看 中文意思
+    • 点击 🎤 开始录音 (语音评测)
+    • 点击 [下一句] 继续学习
+
+
+🔧 API 端点（待实现）
+════════════════════════════════════════════════════════════════════════════
+
+获取单元信息:
+  GET /api/lesson/units?course_id=1&unit_number=1
+  
+获取句子列表:
+  GET /api/lesson/sentences?unit_id=1
+  
+获取句子详情:
+  GET /api/lesson/sentences/1
+  
+上传学习进度:
+  POST /api/learning/progress
+  {
+    "unit_id": 1,
+    "completed_sentences": [1, 2, 3],
+    "pronunciation_scores": {"1": 85, "2": 92}
+  }
+  
+获取用户进度:
+  GET /api/learning/progress?unit_id=1
+
+
+💾 数据模型
+════════════════════════════════════════════════════════════════════════════
+
+SentenceContent {
+  english: String        // "Hello! I'm Sarah."
+  chinese: String        // "你好！我是萨拉。"
+  audioUrl: String?      // 音频 URL（可选）
+}
+
+LessonUnit {
+  id: Int                // 1
+  title: String          // "Unit 1 Hello!"
+  sentenceCount: Int     // 10
+}
+
+UserLessonProgress {
+  unitId: Int
+  completedSentences: List<Int>
+  pronunciationScores: Map<Int, Int>
+  progressPercentage(): Double  // 0.0-1.0
+}
+
+
+📊 演示数据来源
+════════════════════════════════════════════════════════════════════════════
+
+所有演示数据来自数据库 main_mysql.sql:
+
+Unit 1 Hello!           (10 句) - course_content id: 1-87
+Unit 2 My first class   (10 句) - course_content id: 88-147
+Unit 3 Look, listen...  (10 句) - course_content id: 156-230
+Unit 4 Ready for school (10 句) - course_content id: 230-299
+Unit 5 People around me (10 句) - course_content id: 300+
+
+详见: xuebaAPP/lib/pages/lesson_study_demo.dart
+
+
+🎨 UI 组件
+════════════════════════════════════════════════════════════════════════════
+
+AppBar:
+  • 返回按钮
+  • 单元标题
+  • 进度数字 (1/10)
+  • 进度条
+
+主内容区:
+  • 状态指示器 (完成/未完成)
+  • 英文句子卡片 (带播放按钮)
+  • 中文翻译卡片
+  • 语音评测按钮 (🎤 录音)
+
+底部导航栏:
+  • [◄ 上一句] 按钮
+  • [下一句 ►] 按钮
+
+对话框:
+  • 语音评测结果 (流畅度、准确度、完整度)
+  • 课文学习完成 (进度、统计信息)
+
+
+✨ 语音评测流程
+════════════════════════════════════════════════════════════════════════════
+
+当前: 模拟评测 (用于 UI 演示)
+  用户点击 🎤
+    ↓
+  显示"正在录音..."
+    ↓
+  2 秒后显示结果对话框
+    ├─ 流畅度: 85
+    ├─ 准确度: 92
+    └─ 完整度: 88
+    ↓
+  用户点击"继续"
+    ↓
+  进入下一句
+
+未来: 真实评测 (需要集成语音识别 API)
+  支持的服务:
+  • 科大讯飞 (iFLYTEK)
+  • 百度语音识别
+  • 阿里云语音识别
+
+
+🚀 快速集成步骤
+════════════════════════════════════════════════════════════════════════════
+
+1. 导入页面:
+   import 'lesson_study_page.dart';
+
+2. 在首页添加按钮:
+   _buildFunctionCard('课文学习', '...', ...() {
+     _navigateToLessonStudy();
+   })
+
+3. 添加导航方法 (已在 home_page.dart 中实现):
+   void _navigateToLessonStudy() {
+     Navigator.push(
+       context,
+       MaterialPageRoute(
+         builder: (context) => LessonStudyPage(...),
+       ),
+     );
+   }
+
+4. 导入服务（获取真实数据）:
+   import 'services/lesson_content_service.dart';
+   final service = LessonContentService();
+   final sentences = await service.getLessonSentences(unitId: 1);
+
+
+📱 响应式设计
+════════════════════════════════════════════════════════════════════════════
+
+✅ 手机: 单栏布局，全屏
+✅ 平板: 最大宽度约束
+✅ 桌面: 居中对齐
+
+
+🔄 学习流程
+════════════════════════════════════════════════════════════════════════════
+
+开始学习
+   ↓
+显示句子 1
+   ├─ 播放英文 (可选)
+   ├─ 查看翻译
+   ├─ 跟读评测 (可选)
+   └─ 标记完成
+   ↓
+显示句子 2
+   └─ (重复)
+   ↓
+所有句子完成
+   ↓
+显示完成对话框
+   └─ 完成进度: 10/10
+   └─ 返回首页
+
+
+🧪 测试数据
+════════════════════════════════════════════════════════════════════════════
+
+使用 lesson_study_demo.dart 中的测试数据:
+
+LessonDemoData.unit1Sentences     # Unit 1 的 10 句话
+LessonDemoData.unit2Sentences     # Unit 2 的 10 句话
+LessonDemoData.allUnits           # 所有单元字典
+LessonDemoData.getAllUnitNames()  # 获取单元名称列表
+
+LessonStatistics.averageCompletionTime      # 平均完成时间
+LessonStatistics.unitCompletionStats        # 单元完成统计
+LessonStatistics.getTotalSentencesLearned() # 总学习句子数
+
+
+✅ 已实现功能
+════════════════════════════════════════════════════════════════════════════
+
+[✅] 课文学习主页面
+[✅] 英文句子播放 (TTS)
+[✅] 中文翻译显示
+[✅] 上一句/下一句导航
+[✅] 学习进度跟踪
+[✅] 完成对话框
+[✅] 首页集成
+[✅] 服务层 API 设计
+[✅] 语音评测 UI (模拟)
+[✅] 演示数据
+
+
+⏳ 待完成功能
+════════════════════════════════════════════════════════════════════════════
+
+[ ] 后端 API 实现 (Flask)
+[ ] 真实语音评测 (科大讯飞/百度)
+[ ] 数据库表创建
+[ ] 学习记录持久化
+[ ] 单元选择页面
+[ ] 学习统计报告
+
+
+📞 支持的功能
+════════════════════════════════════════════════════════════════════════════
+
+✓ 暗黑模式支持
+✓ 多语言朗读 (英音、美音)
+✓ 自动播放设置
+✓ 离线支持 (缓存)
+✓ 无障碍设计
+
+
+📚 文件清单
+════════════════════════════════════════════════════════════════════════════
+
+核心实现文件:
+  ✅ lesson_study_page.dart           (600+ 行，完整实现)
+  ✅ lesson_study_demo.dart           (演示数据)
+  ✅ lesson_content_service.dart      (服务层)
+
+修改的现有文件:
+  ✅ home_page.dart                   (已添加导航)
+
+数据库文件:
+  📄 main_mysql.sql                   (已包含数据)
+
+
+🎯 下一步行动
+════════════════════════════════════════════════════════════════════════════
+
+1. 测试前端实现
+   - 在 home_page 上点击"课文学习"按钮
+   - 验证所有 UI 元素显示正确
+   - 测试导航和交互
+
+2. 实现后端 API (参考 API 端点文档)
+   - POST /api/learning/progress
+   - GET /api/lesson/units
+   - GET /api/lesson/sentences
+
+3. 集成语音识别 (可选)
+   - 选择语音评测服务
+   - 实现 _pronounceSentence() 方法
+   - 测试语音评测准确度
+
+4. 添加单元选择页面
+   - 显示所有可用单元
+   - 允许用户选择学习的单元
+   - 显示学习进度
+
+
+💡 提示
+════════════════════════════════════════════════════════════════════════════
+
+• 所有数据来自数据库，确保数据库已初始化
+• 使用 lesson_study_demo.dart 快速测试 UI
+• 集成真实数据时，使用 LessonContentService
+• 语音评测目前为模拟，可根据需要替换为真实 API
+
+
+═══════════════════════════════════════════════════════════════════════════
+
+生成时间: 2026-02-09
+实现状态: ✅ 前端完成，✅ 演示数据完成，⏳ 后端待实现

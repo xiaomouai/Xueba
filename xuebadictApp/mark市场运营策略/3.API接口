@@ -1,0 +1,5492 @@
+# 狮子英语 App API接口文档（重构版）
+
+> **版本**: V2.0.0  
+> **更新日期**: 2026-02-03  
+> **说明**: 本文档基于dict词库数据结构重构，实现教材同步和单词数据的完整对接
+
+---
+
+## 📋 文档说明
+
+本API文档整合了以下内容：
+1. **Dict词库数据**: 81个词书，153,009个单词，包含人教版小学/初中/高中全系列
+2. **狮子英语PRD需求**: 课本同步学习、AI发音、智能诊断、家长中心等核心功能
+3. **RESTful API设计**: 标准化接口设计，支持JWT认证
+
+---
+
+## 一、产品概述
+
+### 1.1 产品信息
+
+| 项目 | 说明 |
+|------|------|
+| **产品名称** | 狮子英语 |
+| **版本号** | V1.0.0 |
+| **目标用户** | 6-12岁小学生及其家长 |
+| **产品定位** | AI驱动的小学英语同步学习App |
+| **核心价值** | 课本同步+AI个性化学习+效果可追踪 |
+
+### 1.2 核心功能模块
+
+```
+狮子英语 App
+├── 📚 课本同步学习（核心）
+│   ├── 单词学习
+│   ├── 单词记忆（闯关模式）
+│   ├── 听写练习
+│   └── 单元测试
+├── 🎙️ AI发音训练
+│   ├── 跟读评分
+│   ├── 发音诊断
+│   └── 纠正训练
+├── 📊 AI学习诊断
+│   ├── 错题分析
+│   ├── 薄弱点诊断
+│   └── 个性化推荐
+├── 👨‍👩‍👧 家长中心
+│   ├── 学情报告
+│   ├── 学习提醒
+│   └── 家长辅导助手
+├── 🎮 激励系统
+│   ├── 积分体系
+│   ├── 成就勋章
+│   ├── 打卡日历
+│   └── 排行榜
+└── 👤 用户中心
+    ├── 账号管理
+    ├── 会员订阅
+    └── 设置
+```
+
+---
+
+## 二、用户角色与权限
+
+### 2.1 用户角色定义
+
+| 角色 | 说明 | 核心权限 |
+|------|------|----------|
+| **游客** | 未注册用户 | 浏览首页、体验3个免费单词 |
+| **免费用户** | 已注册未付费 | 每日5词限制、基础功能 |
+| **基础会员** | 99元/年 | 全部单词、听写、基础报告 |
+| **AI智能会员** | 299元/年 | +AI发音、AI诊断、智能推荐 |
+| **VIP会员** | 599元/年 | +家长助手、1v1服务、专属功能 |
+| **家长账号** | 关联孩子账号 | 查看学情、管理设置 |
+
+### 2.2 账号体系设计
+
+```
+┌─────────────────────────────────────┐
+│            家庭账号体系              │
+├─────────────────────────────────────┤
+│  家长主账号（手机号注册）            │
+│       │                             │
+│       ├── 孩子账号1（子账号）        │
+│       ├── 孩子账号2（子账号）        │
+│       └── 孩子账号3（最多3个）       │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 三、功能模块PRD详解
+
+---
+
+### 模块1️⃣：课本同步学习
+
+#### 3.1.1 功能概述
+
+| 功能 | 说明 | 优先级 |
+|------|------|--------|
+| 教材选择 | 支持人教版/外研版/冀教版等主流版本 | P0 |
+| 单元选择 | 按课本单元组织内容 | P0 |
+| 单词学习 | 看词、听音、跟读、例句 | P0 |
+| 记忆闯关 | 游戏化单词记忆 | P0 |
+| 听写练习 | 模拟真实听写场景 | P0 |
+| 单元测试 | 单元综合测评 | P1 |
+
+#### 3.1.2 前端页面结构
+
+```
+📱 课本学习模块页面
+│
+├── 1. 教材选择页 (TextbookSelectPage)
+│   ├── 年级选择（1-6年级）
+│   ├── 版本选择（人教版/外研版/冀教版...）
+│   └── 学期选择（上册/下册）
+│
+├── 2. 单元列表页 (UnitListPage)
+│   ├── 单元卡片列表
+│   ├── 学习进度显示
+│   └── 单元锁定状态
+│
+├── 3. 单词学习页 (WordLearningPage)
+│   ├── 单词卡片（翻转动画）
+│   ├── 发音播放按钮
+│   ├── 音标显示
+│   ├── 中文释义
+│   ├── 例句展示
+│   ├── 跟读按钮
+│   └── 下一个/上一个
+│
+├── 4. 记忆闯关页 (MemoryGamePage)
+│   ├── 关卡进度条
+│   ├── 题目区域（多种题型切换）
+│   ├── 选项区域
+│   ├── 即时反馈动画
+│   ├── 星星奖励
+│   └── 闯关结果页
+│
+├── 5. 听写练习页 (DictationPage)
+│   ├── 语音播放控制
+│   ├── 输入框/手写板
+│   ├── 提交按钮
+│   ├── 结果批改页
+│   └── 错词本添加
+│
+└── 6. 单元测试页 (UnitTestPage)
+    ├── 测试题目
+    ├── 倒计时
+    ├── 提交评分
+    └── 测试报告
+```
+
+#### 3.1.3 后端API接口
+
+##### 教材相关接口（基于Dict词库）
+
+```yaml
+# 1. 获取教材版本列表（从Dict词库同步）
+GET /api/v1/textbooks
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    category: string  # 可选：小学/初中/高中
+Response:
+  {
+    "code": 200,
+    "msg": "success",
+    "data": {
+      "textbooks": [
+        {
+          "id": "PEP",
+          "name": "人教版",
+          "publisher": "人民教育出版社",
+          "icon": "https://nos.netease.com/ydschool-online/2_youdao_PEPXiaoXue3_1.jpg",
+          "grades": [3, 4, 5, 6],  # 小学3-6年级
+          "categories": ["小学", "初中", "高中"],
+          "bookCount": 44,  # 该版本词书总数
+          "totalWords": 5234  # 该版本单词总数
+        },
+        {
+          "id": "BEISHI",
+          "name": "北师大版",
+          "publisher": "北京师范大学出版社",
+          "icon": "https://nos.netease.com/ydschool-online/reciteWord_BeiShiGaoZhong_1.jpg",
+          "grades": [1, 2, 3, 4, 5, 6],  # 高中必修+选修
+          "categories": ["高中"],
+          "bookCount": 11,
+          "totalWords": 3362
+        },
+        {
+          "id": "WAIYANSHE",
+          "name": "外研社版",
+          "publisher": "外语教学与研究出版社",
+          "icon": "https://nos.netease.com/ydschool-online/reciteWord_1545032535025_WaiYanSheChuZhong_1.png",
+          "grades": [7, 8, 9],  # 初中7-9年级
+          "categories": ["初中"],
+          "bookCount": 6,
+          "totalWords": 2162
+        }
+      ],
+      "statistics": {
+        "totalTextbooks": 3,
+        "totalBooks": 61,
+        "totalWords": 10758
+      }
+    },
+    "request_id": "abc123..."
+  }
+
+# 2. 获取教材的词书列表（按年级和学期）
+GET /api/v1/textbooks/{textbook_id}/books
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    grade: int        # 年级：3-6（小学）、7-9（初中）、1-3（高中必修）
+    term: int         # 学期：1上册 2下册（可选）
+    category: string  # 分类：小学/初中/高中
+Response:
+  {
+    "code": 200,
+    "data": {
+      "textbook": {
+        "id": "PEP",
+        "name": "人教版",
+        "grade": 3,
+        "term": 1,
+        "category": "小学"
+      },
+      "books": [
+        {
+          "id": "PEPXiaoXue3_1",
+          "bookId": "PEPXiaoXue3_1",  # Dict词库中的bookId
+          "title": "人教版小学英语-三年级上册",
+          "wordCount": 64,
+          "grade": 3,
+          "term": 1,
+          "category": "小学",
+          "tag": "人教版",
+          "icon": "https://nos.netease.com/ydschool-online/2_youdao_PEPXiaoXue3_1.jpg",
+          "popularity": 378234,  # 学习人数
+          "zipFile": "1521164661774_PEPXiaoXue3_1.zip",
+          "downloadUrl": "http://ydschool-online.nos.netease.com/1521164661774_PEPXiaoXue3_1.zip",
+          "isLocked": false,  # 是否需要会员解锁
+          "userProgress": {
+            "learnedWords": 0,
+            "masteredWords": 0,
+            "progress": 0
+          }
+        },
+        {
+          "id": "PEPXiaoXue3_2",
+          "bookId": "PEPXiaoXue3_2",
+          "title": "人教版小学英语-三年级下册",
+          "wordCount": 72,
+          "grade": 3,
+          "term": 2,
+          "category": "小学",
+          "tag": "人教版",
+          "icon": "https://nos.netease.com/ydschool-online/2_youdao_PEPXiaoXue3_2.jpg",
+          "popularity": 103262,
+          "isLocked": false
+        }
+      ],
+      "total": 2
+    }
+  }
+
+# 3. 获取词书的单词列表（从Dict ZIP文件解析）
+GET /api/v1/books/{book_id}/words
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    page: int         # 页码，默认1
+    page_size: int    # 每页数量，默认20
+    sort: string      # 排序：rank（默认）/alpha（字母序）
+Response:
+  {
+    "code": 200,
+    "data": {
+      "book": {
+        "id": "PEPXiaoXue3_1",
+        "title": "人教版小学英语-三年级上册",
+        "wordCount": 64
+      },
+      "words": [
+        {
+          "wordRank": 1,
+          "headWord": "hello",
+          "usphone": "həˈloʊ",
+          "ukphone": "həˈləʊ",
+          "translation": "int. 你好；喂",
+          "usspeech": "https://dict.youdao.com/dictvoice?audio=hello&type=2",
+          "ukspeech": "https://dict.youdao.com/dictvoice?audio=hello&type=1",
+          "isLearned": false,
+          "masteryLevel": 0,  # 掌握程度 0-5
+          "lastLearnAt": null
+        },
+        {
+          "wordRank": 2,
+          "headWord": "hi",
+          "usphone": "haɪ",
+          "ukphone": "haɪ",
+          "translation": "int. 嗨；你好",
+          "usspeech": "https://dict.youdao.com/dictvoice?audio=hi&type=2",
+          "ukspeech": "https://dict.youdao.com/dictvoice?audio=hi&type=1",
+          "isLearned": true,
+          "masteryLevel": 3,
+          "lastLearnAt": "2026-02-03T10:30:00Z"
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "page_size": 20,
+        "total": 64,
+        "total_pages": 4
+      },
+      "statistics": {
+        "learned": 10,
+        "mastered": 5,
+        "progress": 15.6
+      }
+    }
+  }
+
+# 4. 获取单词详细信息（完整Dict数据）
+GET /api/v1/words/{book_id}/{word_rank}
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "bookId": "PEPXiaoXue3_1",
+      "wordRank": 1,
+      "word": "hello",
+      "ukphone": "həˈləʊ",
+      "usphone": "həˈloʊ",
+      "ukspeech": "https://dict.youdao.com/dictvoice?audio=hello&type=1",
+      "usspeech": "https://dict.youdao.com/dictvoice?audio=hello&type=2",
+      "translations": [
+        {
+          "pos": "int",
+          "tranCn": "你好；喂",
+          "tranOther": "used as a greeting or to begin a phone conversation"
+        },
+        {
+          "pos": "n",
+          "tranCn": "表示问候；打招呼",
+          "tranOther": ""
+        }
+      ],
+      "sentences": [
+        {
+          "sContent": "Hello, how are you?",
+          "sCn": "你好，你好吗？"
+        },
+        {
+          "sContent": "Say hello to your parents for me.",
+          "sCn": "代我向你父母问好。"
+        }
+      ],
+      "phrases": [
+        {
+          "pContent": "say hello",
+          "pCn": "打招呼；问好"
+        },
+        {
+          "pContent": "hello world",
+          "pCn": "你好世界（计算机程序）"
+        }
+      ],
+      "synonyms": [
+        {
+          "pos": "int",
+          "tran": "你好",
+          "hwds": [
+            {"w": "hi"},
+            {"w": "hey"}
+          ]
+        }
+      ],
+      "relWords": [
+        {
+          "pos": "n",
+          "words": [
+            {
+              "hwd": "greeting",
+              "tran": "问候；打招呼"
+            }
+          ]
+        }
+      ],
+      "exams": [
+        {
+          "question": "When you meet someone, you can say ______.",
+          "examType": 1,
+          "choices": [
+            {"choiceIndex": 1, "choice": "goodbye"},
+            {"choiceIndex": 2, "choice": "hello"},
+            {"choiceIndex": 3, "choice": "sorry"},
+            {"choiceIndex": 4, "choice": "thanks"}
+          ],
+          "answer": {
+            "rightIndex": 2,
+            "explain": "见面打招呼用hello"
+          }
+        }
+      ],
+      "userLearning": {
+        "isLearned": true,
+        "masteryLevel": 3,
+        "learnCount": 5,
+        "correctCount": 4,
+        "wrongCount": 1,
+        "lastLearnAt": "2026-02-03T10:30:00Z",
+        "nextReviewAt": "2026-02-04T10:30:00Z"
+      }
+    }
+  }
+
+# 5. 更新单词学习状态（记录学习行为）
+POST /api/v1/words/{book_id}/{word_rank}/learn
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "action": "view" | "listen" | "read" | "practice",
+      "duration": 30,  # 学习时长(秒)
+      "is_correct": true,  # 练习是否正确（可选）
+      "score": 85  # 发音评分（可选）
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "wordRank": 1,
+      "word": "hello",
+      "masteryLevel": 3,  # 更新后的掌握程度
+      "nextReviewAt": "2026-02-04T10:30:00Z",  # 艾宾浩斯复习时间
+      "points_earned": 10,
+      "exp_earned": 5,
+      "streak_days": 5,
+      "achievements": [
+        {
+          "id": "first_word",
+          "name": "初学者",
+          "description": "学习第一个单词"
+        }
+      ]
+    }
+  }
+
+# 6. 批量获取单词（用于离线缓存）
+POST /api/v1/words/batch
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "words": [
+        {"bookId": "PEPXiaoXue3_1", "wordRank": 1},
+        {"bookId": "PEPXiaoXue3_1", "wordRank": 2},
+        {"bookId": "PEPXiaoXue3_1", "wordRank": 3}
+      ]
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "words": [
+        {
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 1,
+          "word": "hello",
+          // ... 完整单词数据
+        }
+      ],
+      "total": 3
+    }
+  }
+
+# 7. 搜索单词（跨词书搜索）
+GET /api/v1/words/search
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    keyword: string   # 搜索关键词
+    book_id: string   # 可选：限定词书
+    category: string  # 可选：限定分类（小学/初中/高中）
+    limit: int        # 返回数量限制，默认50
+Response:
+  {
+    "code": 200,
+    "data": {
+      "keyword": "hello",
+      "results": [
+        {
+          "bookId": "PEPXiaoXue3_1",
+          "bookTitle": "人教版小学英语-三年级上册",
+          "wordRank": 1,
+          "word": "hello",
+          "translation": "int. 你好；喂",
+          "usphone": "həˈloʊ",
+          "category": "小学",
+          "grade": 3
+        }
+      ],
+      "total": 1,
+      "searchTime": 0.05  # 搜索耗时（秒）
+    }
+  }
+
+# 8. 获取今日推荐单词（AI智能推荐）
+GET /api/v1/words/daily-recommend
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    count: int  # 推荐数量，默认10
+Response:
+  {
+    "code": 200,
+    "data": {
+      "date": "2026-02-03",
+      "recommendReason": "基于您的学习进度和薄弱点推荐",
+      "words": [
+        {
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 5,
+          "word": "apple",
+          "translation": "n. 苹果",
+          "reason": "该单词您已学习3次但掌握度较低",
+          "priority": "high"
+        }
+      ],
+      "total": 10
+    }
+  }
+```
+
+##### 单元和闯关接口（基于Dict词书组织）
+
+```yaml
+# 9. 创建学习单元（将词书按单元组织）
+POST /api/v1/books/{book_id}/units
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "unitName": "Unit 1 Hello",
+      "wordRanks": [1, 2, 3, 4, 5],  # 该单元包含的单词序号
+      "sortOrder": 1
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "unitId": "unit_001",
+      "bookId": "PEPXiaoXue3_1",
+      "unitName": "Unit 1 Hello",
+      "wordCount": 5,
+      "created_at": "2026-02-03T10:00:00Z"
+    }
+  }
+
+# 10. 获取词书的单元列表
+GET /api/v1/books/{book_id}/units
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "book": {
+        "id": "PEPXiaoXue3_1",
+        "title": "人教版小学英语-三年级上册"
+      },
+      "units": [
+        {
+          "id": "unit_001",
+          "name": "Unit 1 Hello",
+          "wordCount": 5,
+          "learnedCount": 3,
+          "progress": 60,
+          "isLocked": false,
+          "stars": 2,  # 闯关星级
+          "sortOrder": 1
+        },
+        {
+          "id": "unit_002",
+          "name": "Unit 2 Colours",
+          "wordCount": 6,
+          "learnedCount": 0,
+          "progress": 0,
+          "isLocked": true,  # 需要完成前一单元
+          "stars": 0,
+          "sortOrder": 2
+        }
+      ],
+      "total": 6
+    }
+  }
+
+# 11. 获取单元的单词列表
+GET /api/v1/units/{unit_id}/words
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "unit": {
+        "id": "unit_001",
+        "name": "Unit 1 Hello",
+        "bookId": "PEPXiaoXue3_1"
+      },
+      "words": [
+        {
+          "wordRank": 1,
+          "word": "hello",
+          "usphone": "həˈloʊ",
+          "translation": "int. 你好；喂",
+          "usspeech": "https://dict.youdao.com/dictvoice?audio=hello&type=2",
+          "isLearned": true,
+          "masteryLevel": 3
+        }
+      ],
+      "total": 5
+    }
+  }
+```
+```
+
+##### 记忆闯关接口（基于Dict考题数据）
+
+```yaml
+# 12. 获取闯关题目（使用Dict中的exam数据）
+GET /api/v1/units/{unit_id}/challenges
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    mode: "normal" | "review" | "wrong"  # 模式：正常/复习/错题
+    difficulty: "easy" | "medium" | "hard"  # 难度（可选）
+Response:
+  {
+    "code": 200,
+    "data": {
+      "challenge_id": "ch_001",
+      "unit_id": "unit_001",
+      "mode": "normal",
+      "total_questions": 10,
+      "time_limit": 300,  # 总时长限制（秒）
+      "questions": [
+        {
+          "id": "q_001",
+          "type": "choice",  # 题型：choice/spell/listen/match
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 1,
+          "word": "hello",
+          "question": "hello 的中文意思是？",
+          "audio_url": null,
+          "options": ["你好", "再见", "谢谢", "对不起"],
+          "correct_index": 0,
+          "time_limit": 15,
+          "points": 10
+        },
+        {
+          "id": "q_002",
+          "type",
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 2,
+          "word": "hi",
+          "question": "听音频，选择正确的单词",
+          "audio_url": "https://dict.youdao.com/dictvoice?audio=hi&type=2",
+          "options": ["hi", "hello", "hey", "bye"],
+          "correct_index": 0,
+          "time_limit": 15,
+          "points": 10
+        },
+        {
+          "id": "q_003",
+          "type": "spell",
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 3,
+          "word": "apple",
+          "question": "根据中文写出英文单词",
+          "hint": "苹果",
+          "audio_url": "https://dict.youdao.com/dictvoice?audio=apple&type=2",
+          "correct_answer": "apple",
+          "time_limit": 30,
+          "points": 15
+        },
+        {
+          "id": "q_004",
+          "type": "exam",  # 使用Dict中的原始考题
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 4,
+          "word": "cancel",
+          "question": "As we can no longer wait for the delivery of our order, we have to _______ it.",
+          "examType": 1,
+          "options": ["postpone", "refuse", "delay", "cancel"],
+          "correct_index": 3,
+          "answer": {
+            "rightIndex": 4,
+            "explain": "cancel order：取消订单。句意：订购的货物尚未送到，我们不能再等了，不得不取消订单。"
+          },
+          "time_limit": 30,
+          "points": 20
+        }
+      ]
+    }
+  }
+
+# 13. 提交闯关结果
+POST /api/v1/challenges/{challenge_id}/submit
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "answers": [
+        {"question_id": "q_001", "answer": 0, "time_spent": 5},
+        {"question_id": "q_002", "answer": 0, "time_spent": 8},
+        {"question_id": "q_003", "answer": "apple", "time_spent": 15},
+        {"question_id": "q_004", "answer": 3, "time_spent": 25}
+      ],
+      "total_time": 120
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "challenge_id": "ch_001",
+      "correct_count": 9,
+      "total_count": 10,
+      "accuracy": 90,
+      "stars": 3,  # 星级评定：1-3星
+      "points_earned": 50,
+      "exp_earned": 30,
+      "time_bonus": 10,  # 速度奖励
+      "perfect_bonus": 0,  # 全对奖励
+      "wrong_words": [
+        {
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 5,
+          "word": "grape",
+          "meaning": "葡萄",
+          "userAnswer": "orange",
+          "correctAnswer": "grape"
+        }
+      ],
+      "is_new_record": true,
+      "achievements_unlocked": [
+        {
+          "id": "first_star",
+          "name": "首次满星",
+          "icon": "⭐",
+          "points": 20
+        }
+      ],
+      "next_unit_unlocked": {
+        "id": "unit_002",
+        "name": "Unit 2 Colours"
+      }
+    }
+  }
+
+# 14. 获取闯关历史记录
+GET /api/v1/challenges/history
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    unit_id: string  # 可选：筛选单元
+    page: int
+    page_size: int
+Response:
+  {
+    "code": 200,
+    "data": {
+      "records": [
+        {
+          "challenge_id": "ch_001",
+          "unit_id": "unit_001",
+          "unit_name": "Unit 1 Hello",
+          "score": 90,
+          "stars": 3,
+          "accuracy": 90,
+          "time_spent": 120,
+          "created_at": "2026-02-03T10:30:00Z"
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "page_size": 20,
+        "total": 15,
+        "total_pages": 1
+      },
+      "statistics": {
+        "total_challenges": 15,
+        "avg_score": 85,
+        "avg_accuracy": 88,
+        "total_stars": 40
+      }
+    }
+  }
+```
+```
+
+##### 听写练习接口（基于Dict音频）
+
+```yaml
+# 15. 开始听写练习
+POST /api/v1/units/{unit_id}/dictation/start
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "word_count": 10,  # 听写单词数
+      "mode": "random" | "sequence" | "wrong" | "weak",  # 模式
+      "include_phrases": false  # 是否包含短语听写
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "dictation_id": "dict_001",
+      "unit_id": "unit_001",
+      "mode": "random",
+      "total_words": 10,
+      "words": [
+        {
+          "id": "dw_001",
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 1,
+          "word": "hello",  # 服务端保留，客户端不显示
+          "audio_url": "https://dict.youdao.com/dictvoice?audio=hello&type=2",
+          "play_count": 3,  # 最多播放次数
+          "hint": "h____",  # 提示（可选）
+          "translation": "你好"  # 中文提示
+        },
+        {
+          "id": "dw_002",
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 2,
+          "word": "apple",
+          "audio_url": "https://dict.youdao.com/dictvoice?audio=apple&type=2",
+          "play_count": 3,
+          "hint": "a____",
+          "translation": "苹果"
+        }
+      ],
+      "time_limit": 600,  # 总时长限制（秒）
+      "created_at": "2026-02-03T10:00:00Z"
+    }
+  }
+
+# 16. 提交听写结果
+POST /api/v1/dictations/{dictation_id}/submit
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "answers": [
+        {
+          "id": "dw_001",
+          "input": "hello",
+          "play_count": 2,  # 实际播放次数
+          "time_spent": 15
+        },
+        {
+          "id": "dw_002",
+          "input": "aple",  # 拼写错误
+          "play_count": 3,
+          "time_spent": 25
+        }
+      ],
+      "total_time": 180
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "dictation_id": "dict_001",
+      "score": 90,
+      "correct_count": 9,
+      "total_count": 10,
+      "accuracy": 90,
+      "results": [
+        {
+          "id": "dw_001",
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 1,
+          "word": "hello",
+          "input": "hello",
+          "is_correct": true,
+          "error_type": null
+        },
+        {
+          "id": "dw_002",
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 2,
+          "word": "apple",
+          "input": "aple",
+          "is_correct": false,
+          "error_type": "spelling",  # spelling/missing/extra
+          "error_detail": "缺少字母 'p'",
+          "correct_spelling": "apple",
+          "similarity": 80  # 相似度
+        }
+      ],
+      "points_earned": 45,
+      "exp_earned": 25,
+      "perfect_bonus": 0,
+      "share_image_url": "https://xxx/dictation_result_dict_001.png",
+      "wrong_words_added": 1,  # 添加到错题本的数量
+      "achievements": [
+        {
+          "id": "dictation_10",
+          "name": "听写达人",
+          "description": "完成10次听写练习"
+        }
+      ]
+    }
+  }
+
+# 17. 获取听写历史记录
+GET /api/v1/dictations/history
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    unit_id: string  # 可选
+    start_date: string  # 可选：开始日期
+    end_date: string  # 可选：结束日期
+    page: int
+    page_size: int
+Response:
+  {
+    "code": 200,
+    "data": {
+      "records": [
+        {
+          "dictation_id": "dict_001",
+          "unit_id": "unit_001",
+          "unit_name": "Unit 1 Hello",
+          "score": 90,
+          "accuracy": 90,
+          "word_count": 10,
+          "correct_count": 9,
+          "time_spent": 180,
+          "created_at": "2026-02-03T10:30:00Z"
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "page_size": 20,
+        "total": 25,
+        "total_pages": 2
+      },
+      "statistics": {
+        "total_dictations": 25,
+        "avg_score": 85,
+        "avg_accuracy": 88,
+        "total_words": 250,
+        "total_correct": 220
+      }
+    }
+  }
+
+# 18. 短语听写（使用Dict中的phrases数据）
+POST /api/v1/units/{unit_id}/dictation/phrases/start
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "phrase_count": 5,
+      "mode": "random"
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "dictation_id": "dict_phrase_001",
+      "phrases": [
+        {
+          "id": "dp_001",
+          "bookId": "PEPXiaoXue3_1",
+          "wordRank": 1,
+          "phrase": "say hello",  # 服务端保留
+          "audio_url": "https://dict.youdao.com/dictvoice?audio=say+hello&type=2",
+          "translation": "打招呼；问好",
+          "play_count": 3
+        }
+      ]
+    }
+  }
+```
+```
+
+---
+
+### 模块2️⃣：AI发音训练
+
+#### 3.2.1 功能概述
+
+| 功能 | 说明 | 优先级 |
+|------|------|--------|
+| 跟读评分 | 实时评估发音准确度 | P0 |
+| 音素分析 | 分析每个音素的发音问题 | P0 |
+| 发音对比 | 用户发音与标准发音波形对比 | P1 |
+| 发音诊断报告 | 生成整体发音问题报告 | P1 |
+| 专项纠正训练 | 针对薄弱音素的练习 | P1 |
+
+#### 3.2.2 前端页面结构
+
+```
+📱 AI发音模块页面
+│
+├── 1. 发音训练首页 (PronunciationHomePage)
+│   ├── 今日跟读任务
+│   ├── 发音能力雷达图
+│   ├── 薄弱音素提示
+│   └── 训练入口
+│
+├── 2. 跟读练习页 (ReadAlongPage)
+│   ├── 单词/句子显示
+│   ├── 标准音频播放
+│   ├── 录音按钮（长按录音）
+│   ├── 波形可视化
+│   ├── 实时评分动画
+│   ├── 评分结果展示（0-100分）
+│   ├── 音素级反馈
+│   └── 重试/下一个
+│
+├── 3. 发音对比页 (ComparisonPage)
+│   ├── 双波形对比图
+│   ├── 标准发音播放
+│   ├── 用户发音播放
+│   ├── 差异高亮标注
+│   └── 改进建议
+│
+├── 4. 发音诊断报告页 (DiagnosisReportPage)
+│   ├── 总体评分
+│   ├── 各维度评分（准确度/流利度/语调）
+│   ├── 问题音素列表
+│   ├── 学习建议
+│   └── 专项训练入口
+│
+└── 5. 专项训练页 (FocusTrainingPage)
+    ├── 音素讲解（口型视频）
+    ├── 跟读练习
+    └── 巩固测试
+```
+
+#### 3.2.3 后端API接口
+
+```yaml
+# 1. 获取发音评测接口
+POST /api/v1/pronunciation/evaluate
+Request:
+  Headers:
+    Authorization: Bearer {token}
+    Content-Type: multipart/form-data
+  Body:
+    audio: file  # 用户录音文件(wav/mp3)
+    text: string  # 目标文本
+    word_id: string  # 关联单词ID（可选）
+    type: "word" | "sentence"  # 评测类型
+Response:
+  {
+    "code": 200,
+    "data": {
+      "evaluation_id": "eval_001",
+      "overall_score": 85,
+      "scores": {
+        "accuracy": 82,      # 准确度
+        "fluency": 88,       # 流利度
+        "completeness": 90,  # 完整度
+        "pronunciation": 80  # 发音
+      },
+      "phonemes": [
+        {
+          "phoneme": "æ",
+          "score": 75,
+          "is_correct": false,
+          "suggestion": "嘴巴张大一些，舌头放低"
+        },
+        {
+          "phoneme": "p",
+          "score": 95,
+          "is_correct": true,
+          "suggestion": null
+        }
+      ],
+      "words_detail": [
+        {
+          "word": "apple",
+          "score": 85,
+          "phonemes": ["æ", "p", "ə", "l"]
+        }
+      ],
+      "audio_comparison": {
+        "standard_audio_url": "https://xxx/standard.mp3",
+        "user_audio_url": "https://xxx/user_eval_001.mp3",
+        "waveform_comparison_url": "https://xxx/comparison.png"
+      },
+      "suggestions": [
+        "注意元音 /æ/ 的发音，嘴巴需要张得更大",
+        "整体流利度很好，继续保持"
+      ],
+      "points_earned": 15
+    }
+  }
+
+# 2. 获取发音诊断报告
+GET /api/v1/pronunciation/diagnosis
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    period: "week" | "month" | "all"  # 统计周期
+Response:
+  {
+    "code": 200,
+    "data": {
+      "overall_score": 78,
+      "total_practices": 156,
+      "practice_duration": 3600,  # 总练习时长(秒)
+      "score_trend": [75, 76, 78, 77, 80, 82, 78],  # 近7天分数趋势
+      "dimension_scores": {
+        "accuracy": 75,
+        "fluency": 82,
+        "pronunciation": 76
+      },
+      "weak_phonemes": [
+        {
+          "phoneme": "θ",
+          "name": "咬舌音",
+          "avg_score": 60,
+          "practice_count": 23,
+          "example_words": ["think", "three", "thank"],
+          "tutorial_video_url": "https://xxx/theta_tutorial.mp4"
+        },
+        {
+          "phoneme": "æ",
+          "name": "短元音",
+          "avg_score": 68,
+          "practice_count": 45,
+          "example_words": ["apple", "cat", "hat"],
+          "tutorial_video_url": "https://xxx/ae_tutorial.mp4"
+        }
+      ],
+      "strong_phonemes": [
+        {"phoneme": "p", "avg_score": 95},
+        {"phoneme": "b", "avg_score": 92}
+      ],
+      "recommendations": [
+        {
+          "type": "focus_training",
+          "title": "咬舌音专项训练",
+          "description": "您的 θ 音需要加强，推荐进行专项训练",
+          "action_url": "/training/phoneme/theta"
+        }
+      ]
+    }
+  }
+
+# 3. 获取专项训练内容
+GET /api/v1/pronunciation/training/{phoneme}
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "phoneme": "θ",
+      "name": "咬舌音 th",
+      "description": "发这个音时，舌尖轻轻接触上齿...",
+      "tutorial_video_url": "https://xxx/theta_tutorial.mp4",
+      "mouth_shape_images": [
+        "https://xxx/theta_1.jpg",
+        "https://xxx/theta_2.jpg"
+      ],
+      "practice_words": [
+        {
+          "word_id": "w_think",
+          "word": "think",
+          "phonetic": "/θɪŋk/",
+          "audio_url": "https://xxx/think.mp3"
+        }
+      ],
+      "practice_sentences": [
+        {
+          "sentence_id": "s_001",
+          "text": "I think it's three o'clock.",
+          "audio_url": "https://xxx/sentence_001.mp3"
+        }
+      ]
+    }
+  }
+
+# 4. 保存发音练习记录
+POST /api/v1/pronunciation/practice/save
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "word_id": "word_001",
+      "score": 85,
+      "duration": 30,
+      "phoneme_scores": [
+        {"phoneme": "æ", "score": 75},
+        {"phoneme": "p", "score": 95}
+      ]
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "practice_id": "prac_001",
+      "streak_days": 7,
+      "total_points": 150,
+      "level_up": false
+    }
+  }
+```
+
+---
+
+### 模块3️⃣：AI学习诊断
+
+#### 3.3.1 功能概述
+
+| 功能 | 说明 | 优先级 |
+|------|------|--------|
+| 错题自动归集 | 自动收集所有做错的题目 | P0 |
+| 错因分析 | AI分析错误原因分类 | P0 |
+| 知识图谱 | 展示知识点掌握情况 | P1 |
+| 智能推荐 | 基于薄弱点推荐练习 | P0 |
+| 学习报告 | 周期性学习报告 | P1 |
+
+#### 3.3.2 前端页面结构
+
+```
+📱 AI诊断模块页面
+│
+├── 1. 诊断首页 (DiagnosisHomePage)
+│   ├── 学习能力雷达图
+│   ├── 本周学习概况
+│   ├── 待巩固单词数
+│   ├── 薄弱点提示卡片
+│   └── 快捷入口
+│
+├── 2. 错题本页面 (WrongBookPage)
+│   ├── 筛选栏（按单元/时间/类型）
+│   ├── 错题列表
+│   ├── 错题详情卡片
+│   │   ├── 原题回顾
+│   │   ├── 正确答案
+│   │   ├── 错误分析
+│   │   └── 类似题推荐
+│   └── 一键巩固按钮
+│
+├── 3. 知识图谱页面 (KnowledgeMapPage)
+│   ├── 可视化知识点关系图
+│   ├── 知识点掌握度颜色标识
+│   ├── 点击查看详情
+│   └── 针对性练习入口
+│
+├── 4. 智能练习页 (SmartPracticePage)
+│   ├── AI推荐理由说明
+│   ├── 题目展示
+│   ├── 练习进度
+│   └── 练习报告
+│
+└── 5. 学习报告页 (LearningReportPage)
+    ├── 时间周期选择
+    ├── 核心数据概览
+    ├── 学习曲线图
+    ├── 掌握情况分析
+    ├── 改进建议
+    └── 分享报告按钮
+```
+
+#### 3.3.3 后端API接口
+
+```yaml
+# 1. 获取错题列表
+GET /api/v1/wrong-book/list
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    unit_id: string    # 筛选单元（可选）
+    error_type: string # 错误类型（可选）
+    page: int
+    page_size: int
+Response:
+  {
+    "code": 200,
+    "data": {
+      "total": 56,
+      "page": 1,
+      "items": [
+        {
+          "id": "wrong_001",
+          "word_id": "word_001",
+          "word": "beautiful",
+          "meaning": "美丽的",
+          "error_type": "spelling",  # spelling/meaning/pronunciation
+          "error_detail": "拼写错误：beautful（漏掉i）",
+          "error_count": 3,
+          "last_error_time": "2024-01-15T10:30:00Z",
+          "is_mastered": false,
+          "related_knowledge": ["形容词", "常用词汇"],
+          "created_at": "2024-01-10T08:00:00Z"
+        }
+      ],
+      "statistics": {
+        "spelling_errors": 30,
+        "meaning_errors": 18,
+        "pronunciation_errors": 8
+      }
+    }
+  }
+
+# 2. 获取错因分析
+GET /api/v1/wrong-book/{wrong_id}/analysis
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "word": "beautiful",
+      "error_history": [
+        {
+          "time": "2024-01-15T10:30:00Z",
+          "user_answer": "beautful",
+          "correct_answer": "beautiful",
+          "question_type": "spell"
+        }
+      ],
+      "error_analysis": {
+        "main_cause": "字母遗漏",
+        "detail": "容易漏掉中间的'i'，该单词的常见错误点",
+        "memory_tip": "beautiful = be + a + u + ti + ful，可以记忆为：小蜜蜂(be)、一个(a)优秀(u)的提(ti)富(ful)翁",
+        "similar_words": ["wonderful", "colorful", "powerful"]
+      },
+      "practice_suggestion": {
+        "type": "spell_practice",
+        "count": 5,
+        "words": ["beautiful", "wonderful", "colorful"]
+      }
+    }
+  }
+
+# 3. 获取知识图谱
+GET /api/v1/diagnosis/knowledge-map
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    grade: int
+    term: int
+Response:
+  {
+    "code": 200,
+    "data": {
+      "nodes": [
+        {
+          "id": "kp_001",
+          "name": "名词",
+          "level": 1,
+          "mastery": 85,
+          "word_count": 120,
+          "mastered_count": 102
+        },
+        {
+          "id": "kp_002", 
+          "name": "水果类名词",
+          "level": 2,
+          "parent_id": "kp_001",
+          "mastery": 90,
+          "word_count": 15,
+          "mastered_count": 14
+        }
+      ],
+      "edges": [
+        {"from": "kp_001", "to": "kp_002"}
+      ],
+      "weak_points": [
+        {
+          "id": "kp_010",
+          "name": "动词过去式",
+          "mastery": 45,
+          "suggestion": "需要加强不规则动词过去式的记忆"
+        }
+      ]
+    }
+  }
+
+# 4. 获取智能推荐练习
+GET /api/v1/diagnosis/smart-practice
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "practice_id": "sp_001",
+      "title": "今日专属练习",
+      "description": "根据您的学习情况，AI为您定制的练习",
+      "reason": "您在\"动词过去式\"方面较薄弱，本次练习重点巩固",
+      "estimated_time": 10,  # 预计分钟数
+      "questions": [
+        {
+          "id": "q_001",
+          "type": "choice",
+          "knowledge_point": "动词过去式",
+          "difficulty": 2,
+          "question": "go 的过去式是？",
+          "options": ["goed", "went", "gone", "going"],
+          "correct_index": 1
+        }
+      ],
+      "rewards": {
+        "points": 30,
+        "exp": 20
+      }
+    }
+  }
+
+# 5. 获取学习报告
+GET /api/v1/diagnosis/report
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    type: "daily" | "weekly" | "monthly"
+    date: "2024-01-15"  # 可选，默认当前
+Response:
+  {
+    "code": 200,
+    "data": {
+      "report_id": "rpt_001",
+      "period": "2024-01-08 至 2024-01-14",
+      "summary": {
+        "study_days": 6,
+        "total_duration": 180,  # 分钟
+        "words_learned": 45,
+        "words_mastered": 38,
+        "accuracy_rate": 85,
+        "rank_in_grade": 156,  # 年级排名
+        "rank_change": 23      # 排名变化（正数上升）
+      },
+      "daily_data": [
+        {
+          "date": "2024-01-08",
+          "duration": 25,
+          "words": 8,
+          "accuracy": 82
+        }
+      ],
+      "achievements": [
+        {
+          "name": "连续打卡7天",
+          "icon": "🔥",
+          "earned_at": "2024-01-14"
+        }
+      ],
+      "weak_areas": [
+        {
+          "area": "动词过去式",
+          "mastery": 60,
+          "trend": "improving"  # improving/declining/stable
+        }
+      ],
+      "next_week_goals": [
+        "完成Unit 5的学习",
+        "巩固动词过去式",
+        "每日发音练习15分钟"
+      ],
+      "share_image_url": "https://xxx/report_week.png",
+      "parent_message": "孩子本周学习很认真，继续保持！建议加强动词过去式的练习。"
+    }
+  }
+```
+
+---
+
+### 模块4️⃣：家长中心
+
+#### 3.4.1 功能概述
+
+| 功能 | 说明 | 优先级 |
+|------|------|--------|
+| 学情查看 | 查看孩子学习数据 | P0 |
+| 学习提醒 | 设置和管理学习提醒 | P0 |
+| 每日报告推送 | 每日学习情况推送 | P1 |
+| 家长辅导助手 | AI辅助家长辅导 | P1 (VIP) |
+| 目标设定 | 设定学习目标 | P2 |
+
+#### 3.4.2 前端页面结构
+
+```
+📱 家长中心模块页面
+│
+├── 1. 家长首页 (ParentHomePage)
+│   ├── 孩子列表（切换）
+│   ├── 今日学习概况卡片
+│   ├── 本周学习进度
+│   ├── 待处理提醒
+│   └── 快捷功能入口
+│
+├── 2. 学情详情页 (StudyDetailPage)
+│   ├── 学习时长统计
+│   ├── 单词掌握情况
+│   ├── 正确率曲线
+│   ├── 薄弱点分析
+│   └── 学习建议
+│
+├── 3. 学习提醒设置页 (ReminderSettingPage)
+│   ├── 每日学习提醒开关
+│   ├── 提醒时间设置
+│   ├── 学习目标设定
+│   └── 奖励规则设定
+│
+├── 4. AI辅导助手页 (AITutorPage) [VIP]
+│   ├── 今日辅导任务
+│   ├── 单词领读功能
+│   ├── 辅导话术提示
+│   ├── 检查作业功能
+│   └── 互动问答
+│
+└── 5. 绑定管理页 (BindingManagePage)
+    ├── 已绑定孩子列表
+    ├── 添加孩子账号
+    └── 解绑操作
+```
+
+#### 3.4.3 后端API接口
+
+```yaml
+# 1. 获取家长首页数据
+GET /api/v1/parent/dashboard
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "children": [
+        {
+          "id": "child_001",
+          "nickname": "小明",
+          "avatar": "https://xxx/avatar.png",
+          "grade": 3,
+          "today_summary": {
+            "study_duration": 25,
+            "words_learned": 12,
+            "accuracy": 88,
+            "is_task_completed": true
+          }
+        }
+      ],
+      "current_child_id": "child_001",
+      "weekly_progress": {
+        "target_days": 7,
+        "completed_days": 5,
+        "target_words": 50,
+        "completed_words": 38
+      },
+      "pending_reminders": [
+        {
+          "type": "praise",
+          "message": "小明今天完成了学习目标，记得表扬他哦！"
+        }
+      ]
+    }
+  }
+
+# 2. 获取孩子学习详情
+GET /api/v1/parent/children/{child_id}/study-detail
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    period: "today" | "week" | "month"
+Response:
+  {
+    "code": 200,
+    "data": {
+      "child_id": "child_001",
+      "period": "week",
+      "statistics": {
+        "total_duration": 150,
+        "avg_daily_duration": 25,
+        "total_words": 45,
+        "mastered_words": 38,
+        "overall_accuracy": 85
+      },
+      "daily_breakdown": [
+        {
+          "date": "2024-01-15",
+          "duration": 30,
+          "words": 8,
+          "accuracy": 90,
+          "modules_used": ["单词学习", "发音练习"]
+        }
+      ],
+      "skill_radar": {
+        "vocabulary": 80,
+        "pronunciation": 75,
+        "listening": 82,
+        "spelling": 70
+      },
+      "weak_areas": [
+        {
+          "name": "拼写",
+          "score": 70,
+          "words": ["beautiful", "because", "different"]
+        }
+      ],
+      "suggestions": [
+        "建议每天增加5分钟拼写练习",
+        "可以和孩子一起玩拼写游戏"
+      ],
+      "comparison": {
+        "vs_last_period": "+15%",
+        "vs_average": "+8%"
+      }
+    }
+  }
+
+# 3. 设置学习提醒
+POST /api/v1/parent/children/{child_id}/reminders
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "daily_reminder": {
+        "enabled": true,
+        "time": "19:00",
+        "message": "该学习英语啦！"
+      },
+      "weekly_goal": {
+        "study_days": 6,
+        "words_count": 50,
+        "duration_minutes": 150
+      },
+      "reward_rules": {
+        "complete_daily": "奖励10分钟游戏时间",
+        "complete_weekly": "周末去公园"
+      }
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "reminder_id": "rem_001",
+      "created_at": "2024-01-15T10:00:00Z"
+    }
+  }
+
+# 4. AI辅导助手 - 获取今日辅导任务
+GET /api/v1/parent/ai-tutor/daily-task
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    child_id: string
+Response:
+  {
+    "code": 200,
+    "data": {
+      "date": "2024-01-15",
+      "child_id": "child_001",
+      "tasks": [
+        {
+          "id": "task_001",
+          "type": "review_words",
+          "title": "复习今日单词",
+          "description": "和孩子一起复习今天学的8个新单词",
+          "words": [
+            {
+              "word": "apple",
+              "phonetic": "/ˈæp.əl/",
+              "meaning": "苹果",
+              "audio_url": "https://xxx/apple.mp3"
+            }
+          ],
+          "tutor_tips": [
+            "可以用实物或图片帮助记忆",
+            "让孩子造一个简单的句子"
+          ],
+          "estimated_time": 10
+        },
+        {
+          "id": "task_002",
+          "type": "dictation",
+          "title": "听写练习",
+          "description": "对本周学过的单词进行听写",
+          "words_count": 10,
+          "tutor_tips": [
+            "先让孩子自己写，不要急着纠正",
+            "写完后一起检查，表扬正确的部分"
+          ]
+        }
+      ],
+      "encouragement_script": "小明今天表现很棒，记得多多鼓励他！",
+      "weak_point_focus": "今天重点关注 beautiful 这个单词的拼写"
+    }
+  }
+
+# 5. 绑定孩子账号
+POST /api/v1/parent/bindChild
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "bindCode": "ABC123",  # 孩子端生成的绑定码
+      "relationship": "mother" | "father" | "grandparent" | "other"
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "child_id": "child_001",
+      "nickname": "小明",
+      "bindTime": "2024-01-15T10:00:00Z"
+    }
+  }
+```
+
+---
+
+### 模块5️⃣：激励系统
+
+#### 3.5.1 功能概述
+
+| 功能 | 说明 | 优先级 |
+|------|------|--------|
+| 积分系统 | 学习行为获得积分 | P0 |
+| 等级成长 | 经验值升级系统 | P0 |
+| 成就勋章 | 达成条件获得勋章 | P1 |
+| 打卡日历 | 学习打卡记录 | P0 |
+| 排行榜 | 班级/好友/全国榜 | P1 |
+| 积分商城 | 积分兑换奖励 | P2 |
+
+#### 3.5.2 后端API接口
+
+```yaml
+# 1. 获取用户成长信息
+GET /api/v1/growth/profile
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "user_id": "user_001",
+      "level": 15,
+      "level_name": "英语小达人",
+      "level_icon": "https://xxx/level_15.png",
+      "exp": 2350,
+      "exp_to_next_level": 500,
+      "total_points": 8800,
+      "available_points": 3200,
+      "streak_days": 7,
+      "total_study_days": 45,
+      "badges_count": 12,
+      "rank": {
+        "national": 15678,
+        "grade": 234
+      }
+    }
+  }
+
+# 2. 获取打卡日历
+GET /api/v1/growth/calendar
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    year: 2024
+    month: 1
+Response:
+  {
+    "code": 200,
+    "data": {
+      "year": 2024,
+      "month": 1,
+      "records": [
+        {
+          "date": "2024-01-01",
+          "is_checked": true,
+          "duration": 25,
+          "words": 12
+        },
+        {
+          "date": "2024-01-02",
+          "is_checked": false,
+          "duration": 0,
+          "words": 0
+        }
+      ],
+      "monthly_summary": {
+        "checked_days": 20,
+        "total_days": 31,
+        "longest_streak": 7,
+        "current_streak": 5
+      },
+      "streak_rewards": [
+        {"days": 7, "reward": "神秘宝箱", "is_claimed": true},
+        {"days": 14, "reward": "限定皮肤", "is_claimed": false},
+        {"days": 21, "reward": "月度会员", "is_claimed": false}
+      ]
+    }
+  }
+
+# 3. 获取成就勋章列表
+GET /api/v1/growth/badges
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "categories": [
+        {
+          "category": "学习成就",
+          "badges": [
+            {
+              "id": "badge_001",
+              "name": "初出茅庐",
+              "description": "完成第一次学习",
+              "icon": "https://xxx/badge_001.png",
+              "is_earned": true,
+              "earned_at": "2024-01-01T10:00:00Z",
+              "progress": null
+            },
+            {
+              "id": "badge_002",
+              "name": "百词斩将",
+              "description": "累计学习100个单词",
+              "icon": "https://xxx/badge_002.png",
+              "is_earned": false,
+              "earned_at": null,
+              "progress": {
+                "current": 78,
+                "target": 100,
+                "percentage": 78
+              }
+            }
+          ]
+        }
+      ],
+      "recent_earned": [
+        {
+          "badge_id": "badge_010",
+          "name": "连续7天打卡",
+          "earned_at": "2024-01-15T08:00:00Z"
+        }
+      ]
+    }
+  }
+
+# 4. 获取排行榜
+GET /api/v1/growth/leaderboard
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Query:
+    type: "national" | "grade" | "class" | "friends"
+    metric: "words" | "duration" | "streak" | "score"
+    period: "daily" | "weekly" | "monthly" | "all"
+Response:
+  {
+    "code": 200,
+    "data": {
+      "type": "grade",
+      "metric": "words",
+      "period": "weekly",
+      "my_rank": {
+        "rank": 156,
+        "value": 45,
+        "change": 23  # 排名变化
+      },
+      "top_list": [
+        {
+          "rank": 1,
+          "user_id": "user_100",
+          "nickname": "猫头鹰小王",
+          "avatar": "https://xxx/avatar.png",
+          "level": 25,
+          "value": 180,
+          "badge": "👑"
+        }
+      ],
+      "around_me": [
+        {
+          "rank": 155,
+          "user_id": "user_099",
+          "nickname": "英语达人",
+          "value": 46
+        },
+        {
+          "rank": 156,
+          "is_me": true,
+          "value": 45
+        },
+        {
+          "rank": 157,
+          "user_id": "user_101",
+          "nickname": "小明同学",
+          "value": 44
+        }
+      ]
+    }
+  }
+
+# 5. 每日签到/打卡
+POST /api/v1/growth/checkin
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "date": "2024-01-15",
+      "streak_days": 8,
+      "points_earned": 10,
+      "bonus_points": 5,  # 连续签到奖励
+      "total_points": 15,
+      "rewards": [
+        {
+          "type": "points",
+          "value": 15
+        }
+      ],
+      "next_milestone": {
+        "days": 14,
+        "reward": "限定头像框"
+      }
+    }
+  }
+
+# 6. 积分商城 - 商品列表
+GET /api/v1/growth/shop/items
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "user_points": 3200,
+      "categories": [
+        {
+          "name": "虚拟道具",
+          "items": [
+            {
+              "id": "item_001",
+              "name": "神秘皮肤",
+              "image": "https://xxx/skin.png",
+              "points": 500,
+              "stock": -1,  # -1表示无限
+              "is_affordable": true
+            }
+          ]
+        },
+        {
+          "name": "会员特权",
+          "items": [
+            {
+              "id": "item_010",
+              "name": "7天VIP体验",
+              "points": 2000,
+              "stock": 100,
+              "is_affordable": true
+            }
+          ]
+        }
+      ]
+    }
+  }
+```
+
+---
+
+### 模块6️⃣：用户中心与会员系统
+
+#### 3.6.1 后端API接口
+
+```yaml
+# 1. 用户注册
+POST /api/v1/auth/register
+Request:
+  Body:
+    {
+      "phone": "13800138000",
+      "code": "123456",  # 短信验证码
+      "password": "******",
+      "role": "student" | "parent",
+      "invite_code": "ABC123"  # 可选
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "user_id": "user_001",
+      "token": "eyJhbGciOiJIUzI1NiIs...",
+      "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+      "is_new_user": true,
+      "gifts": [
+        {"type": "vip_trial", "days": 7}
+      ]
+    }
+  }
+
+# 2. 用户登录
+POST /api/v1/auth/login
+Request:
+  Body:
+    {
+      "phone": "13800138000",
+      "password": "******"
+      // 或者
+      "phone": "13800138000",
+      "code": "123456"
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "user_id": "user_001",
+      "token": "eyJhbGciOiJIUzI1NiIs...",
+      "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+      "user_info": {
+        "nickname": "小明",
+        "avatar": "https://xxx/avatar.png",
+        "role": "student",
+        "vip_level": "ai_member",
+        "vip_expire_at": "2024-12-31T23:59:59Z"
+      }
+    }
+  }
+
+# 3. 获取用户信息
+GET /api/v1/user/profile
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "user_id": "user_001",
+      "phone": "138****8000",
+      "nickname": "小明",
+      "avatar": "https://xxx/avatar.png",
+      "gender": "male",
+      "birthday": "2015-06-15",
+      "grade": 3,
+      "role": "student",
+      "textbook": {
+        "id": "tb_001",
+        "name": "人教版",
+        "grade": 3,
+        "term": 1
+      },
+      "vip_info": {
+        "level": "ai_member",
+        "level_name": "AI智能会员",
+        "expire_at": "2024-12-31T23:59:59Z",
+        "is_active": true,
+        "privileges": ["ai_pronunciation", "ai_diagnosis", "smart_recommend"]
+      },
+      "bindParents": [
+        {
+          "parent_id": "parent_001",
+          "nickname": "妈妈",
+          "bindTime": "2024-01-01"
+        }
+      ],
+      "statistics": {
+        "total_words": 580,
+        "study_days": 45,
+        "total_duration": 1200
+      },
+      "created_at": "2024-01-01T10:00:00Z"
+    }
+  }
+
+# 4. 更新用户信息
+PUT /api/v1/user/profile
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "nickname": "小明同学",
+      "avatar": "https://xxx/new_avatar.png",
+      "gender": "male",
+      "birthday": "2015-06-15",
+      "grade": 3
+    }
+Response:
+  {
+    "code": 200,
+    "message": "更新成功"
+  }
+
+# 5. 获取会员套餐列表
+GET /api/v1/membership/plans
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "current_plan": {
+        "level": "free",
+        "expire_at": null
+      },
+      "plans": [
+        {
+          "id": "plan_basic",
+          "name": "基础会员",
+          "description": "课本同步单词学习",
+          "price": 99,
+          "original_price": 199,
+          "duration_days": 365,
+          "privileges": [
+            {"name": "全部单词解锁", "icon": "📚"},
+            {"name": "听写练习", "icon": "✍️"},
+            {"name": "学习报告", "icon": "📊"}
+          ],
+          "is_recommended": false
+        },
+        {
+          "id": "plan_ai",
+          "name": "AI智能会员",
+          "description": "AI驱动的个性化学习",
+          "price": 299,
+          "original_price": 599,
+          "duration_days": 365,
+          "privileges": [
+            {"name": "包含基础会员全部功能", "icon": "✅"},
+            {"name": "AI发音评测", "icon": "🎙️"},
+            {"name": "AI错题诊断", "icon": "🔍"},
+            {"name": "智能学习推荐", "icon": "🤖"}
+          ],
+          "is_recommended": true,
+          "tag": "最受欢迎"
+        },
+        {
+          "id": "plan_vip",
+          "name": "VIP尊享会员",
+          "description": "专属服务+家长助手",
+          "price": 599,
+          "original_price": 1199,
+          "duration_days": 365,
+          "privileges": [
+            {"name": "包含AI会员全部功能", "icon": "✅"},
+            {"name": "家长辅导助手", "icon": "👨‍👩‍👧"},
+            {"name": "1v1学习规划", "icon": "📋"},
+            {"name": "专属客服", "icon": "💬"}
+          ],
+          "is_recommended": false
+        }
+      ],
+      "promotions": [
+        {
+          "code": "NEWYEAR2024",
+          "description": "新年特惠，立减50元",
+          "discount": 50
+        }
+      ]
+    }
+  }
+
+# 6. 创建订单
+POST /api/v1/orders/create
+Request:
+  Headers:
+    Authorization: Bearer {token}
+  Body:
+    {
+      "plan_id": "plan_ai",
+      "promo_code": "NEWYEAR2024",
+      "payment_method": "wechat" | "alipay"
+    }
+Response:
+  {
+    "code": 200,
+    "data": {
+      "order_id": "order_001",
+      "plan_name": "AI智能会员",
+      "original_price": 299,
+      "discount": 50,
+      "final_price": 249,
+      "payment_method": "wechat",
+      "payment_params": {
+        // 微信/支付宝支付参数
+        "prepay_id": "wx...",
+        "sign": "..."
+      },
+      "expire_at": "2024-01-15T10:30:00Z"  # 订单有效期
+    }
+  }
+
+# 7. 支付回调（服务端）
+POST /api/v1/orders/callback/wechat
+# 微信/支付宝回调，更新订单状态
+
+# 8. 查询订单状态
+GET /api/v1/orders/{order_id}/status
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "order_id": "order_001",
+      "status": "paid",  # pending/paid/expired/refunded
+      "paid_at": "2024-01-15T10:05:00Z",
+      "vip_info": {
+        "level": "ai_member",
+        "expire_at": "2025-01-15T23:59:59Z"
+      }
+    }
+  }
+
+# 9. 邀请相关接口
+GET /api/v1/invite/info
+Request:
+  Headers:
+    Authorization: Bearer {token}
+Response:
+  {
+    "code": 200,
+    "data": {
+      "invite_code": "ABC123",
+      "invite_link": "https://lioneng.app/i/ABC123",
+      "invite_qrcode": "https://xxx/qr_ABC123.png",
+      "rewards_rule": {
+        "per_invite": {
+          "points": 100,
+          "vip_days": 7
+        },
+        "milestones": [
+          {"count": 3, "reward": "30天VIP"},
+          {"count": 10, "reward": "年度VIP"}
+        ]
+      },
+      "statistics": {
+        "total_invites": 5,
+        "successful_invites": 3,
+        "earned_points": 300,
+        "earned_vip_days": 21
+      },
+      "invite_history": [
+        {
+          "user_nickname": "小红",
+          "avatar": "https://xxx/avatar.png",
+          "registered_at": "2024-01-10",
+          "reward": "+7天VIP"
+        }
+      ]
+    }
+  }
+```
+
+---
+
+## 四、数据库设计（核心表）
+
+### 4.1 ER图概览
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   users     │────<│user_textbook│>────│  textbooks  │
+└─────────────┘     └─────────────┘     └─────────────┘
+       │                                       │
+       │            ┌─────────────┐           │
+       │            │    units    │>──────────┘
+       │            └─────────────┘
+       │                   │
+       │            ┌─────────────┐
+       └───────────<│ user_words  │>────┐
+                    └─────────────┘     │
+                           │      ┌─────────────┐
+                           └─────>│   words     │
+                                  └─────────────┘
+       │
+┌─────────────┐     ┌─────────────┐
+│   orders    │────>│   members   │
+└─────────────┘     └─────────────┘
+       
+┌─────────────┐     ┌─────────────┐
+│   parents   │────<│parent_child │>────│  children   │
+└─────────────┘     └─────────────┘     └─────────────┘
+```
+
+### 4.2 核心表结构
+
+```sql
+-- 用户表
+CREATE TABLE users (
+    id VARCHAR(32) PRIMARY KEY,
+    phone VARCHAR(20) UNIQUE NOT NULL,
+    password_hash VARCHAR(128),
+    nickname VARCHAR(50),
+    avatar VARCHAR(255),
+    gender ENUM('male', 'female', 'unknown') DEFAULT 'unknown',
+    birthday DATE,
+    role ENUM('student', 'parent') NOT NULL,
+    grade TINYINT,
+    level INT DEFAULT 1,
+    exp INT DEFAULT 0,
+    points INT DEFAULT 0,
+    streak_days INT DEFAULT 0,
+    invite_code VARCHAR(10) UNIQUE,
+    invited_by VARCHAR(32),
+    status ENUM('active', 'disabled') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_phone (phone),
+    INDEX idx_invite_code (invite_code)
+);
+
+-- 会员表
+CREATE TABLE memberships (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    plan_id VARCHAR(32) NOT NULL,
+    level ENUM('free', 'basic', 'ai', 'vip') NOT NULL,
+    start_at TIMESTAMP NOT NULL,
+    expire_at TIMESTAMP NOT NULL,
+    status ENUM('active', 'expired', 'cancelled') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_expire_at (expire_at)
+);
+
+-- 教材表
+CREATE TABLE textbooks (
+    id VARCHAR(32) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    publisher VARCHAR(50),
+    icon VARCHAR(255),
+    grades JSON,  -- [1,2,3,4,5,6]
+    status ENUM('active', 'disabled') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 单元表
+CREATE TABLE units (
+    id VARCHAR(32) PRIMARY KEY,
+    textbook_id VARCHAR(32) NOT NULL,
+    grade TINYINT NOT NULL,
+    term TINYINT NOT NULL,  -- 1上册 2下册
+    unit_number TINYINT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    word_count INT DEFAULT 0,
+    sort_order INT,
+    status ENUM('active', 'disabled') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_textbook_grade (textbook_id, grade, term)
+);
+
+-- 单词表
+CREATE TABLE words (
+    id VARCHAR(32) PRIMARY KEY,
+    word VARCHAR(100) NOT NULL,
+    phonetic VARCHAR(100),
+    meaning TEXT NOT NULL,
+    audio_url VARCHAR(255),
+    example TEXT,
+    example_audio_url VARCHAR(255),
+    image_url VARCHAR(255),
+    difficulty TINYINT DEFAULT 1,
+    knowledge_points JSON,  -- ["名词", "水果类"]
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_word (word)
+);
+
+-- 单元-单词关联表
+CREATE TABLE unit_words (
+    id VARCHAR(32) PRIMARY KEY,
+    unit_id VARCHAR(32) NOT NULL,
+    word_id VARCHAR(32) NOT NULL,
+    sort_order INT,
+    UNIQUE KEY uk_unit_word (unit_id, word_id),
+    INDEX idx_unit_id (unit_id)
+);
+
+-- 用户单词学习记录
+CREATE TABLE user_words (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    word_id VARCHAR(32) NOT NULL,
+    mastery_level TINYINT DEFAULT 0,  -- 0-5
+    learn_count INT DEFAULT 0,
+    correct_count INT DEFAULT 0,
+    wrong_count INT DEFAULT 0,
+    last_learn_at TIMESTAMP,
+    next_review_at TIMESTAMP,  -- 艾宾浩斯复习时间
+    is_favorite BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_word (user_id, word_id),
+    INDEX idx_user_mastery (user_id, mastery_level),
+    INDEX idx_next_review (user_id, next_review_at)
+);
+
+-- 错题记录表
+CREATE TABLE wrong_records (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    word_id VARCHAR(32) NOT NULL,
+    question_type VARCHAR(20) NOT NULL,
+    user_answer TEXT,
+    correct_answer TEXT,
+    error_type VARCHAR(20),  -- spelling/meaning/pronunciation
+    is_mastered BOOLEAN DEFAULT FALSE,
+    mastered_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_word (user_id, word_id),
+    INDEX idx_user_type (user_id, error_type)
+);
+
+-- 发音评测记录表
+CREATE TABLE pronunciation_records (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    word_id VARCHAR(32),
+    text VARCHAR(500) NOT NULL,
+    audio_url VARCHAR(255) NOT NULL,
+    overall_score INT,
+    accuracy_score INT,
+    fluency_score INT,
+    pronunciation_score INT,
+    phoneme_details JSON,
+    evaluation_result JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_created (user_id, created_at)
+);
+
+-- 学习记录表
+CREATE TABLE study_logs (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    date DATE NOT NULL,
+    module VARCHAR(20) NOT NULL,  -- words/pronunciation/dictation/test
+    duration INT DEFAULT 0,  -- 秒
+    words_count INT DEFAULT 0,
+    correct_count INT DEFAULT 0,
+    points_earned INT DEFAULT 0,
+    exp_earned INT DEFAULT 0,
+    details JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_date (user_id, date),
+    INDEX idx_date_module (date, module)
+);
+
+-- 打卡记录表
+CREATE TABLE checkin_records (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    date DATE NOT NULL,
+    streak_days INT DEFAULT 1,
+    points_earned INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_date (user_id, date),
+    INDEX idx_user_id (user_id)
+);
+
+-- 成就勋章表
+CREATE TABLE achievements (
+    id VARCHAR(32) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    description VARCHAR(200),
+    icon VARCHAR(255),
+    category VARCHAR(20),
+    condition_type VARCHAR(50),
+    condition_value INT,
+    points_reward INT DEFAULT 0,
+    sort_order INT,
+    status ENUM('active', 'disabled') DEFAULT 'active'
+);
+
+-- 用户成就记录
+CREATE TABLE user_achievements (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    achievement_id VARCHAR(32) NOT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_achievement (user_id, achievement_id),
+    INDEX idx_user_id (user_id)
+);
+
+-- 订单表
+CREATE TABLE orders (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    plan_id VARCHAR(32) NOT NULL,
+    original_price DECIMAL(10, 2) NOT NULL,
+    discount DECIMAL(10, 2) DEFAULT 0,
+    final_price DECIMAL(10, 2) NOT NULL,
+    promo_code VARCHAR(20),
+    payment_method VARCHAR(20),
+    payment_no VARCHAR(64),
+    status ENUM('pending', 'paid', 'expired', 'refunded') DEFAULT 'pending',
+    paid_at TIMESTAMP,
+    expire_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_payment_no (payment_no)
+);
+
+-- 家长-孩子关联表
+CREATE TABLE parent_child (
+    id VARCHAR(32) PRIMARY KEY,
+    parent_id VARCHAR(32) NOT NULL,
+    child_id VARCHAR(32) NOT NULL,
+    relationship VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_parent_child (parent_id, child_id),
+    INDEX idx_parent_id (parent_id),
+    INDEX idx_child_id (child_id)
+);
+```
+
+---
+
+## 五、技术架构建议
+
+### 5.1 整体架构图
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                        客户端层                                 │
+├──────────────────┬───────────────────┬─────────────────────────┤
+│    iOS App       │   Android App     │    小程序 / H5          │
+│   (Flutter)      │   (Flutter)       │   (uni-app / 原生)      │
+└────────┬─────────┴─────────┬─────────┴──────────┬──────────────┘
+         │                   │                    │
+         └───────────────────┼────────────────────┘
+                             ▼
+┌────────────────────────────────────────────────────────────────┐
+│                       API网关层                                 │
+│                (Kong / Nginx + Lua / AWS API Gateway)          │
+│          - 限流 - 认证 - 路由 - 日志 - 监控                     │
+└────────────────────────────┬───────────────────────────────────┘
+                             ▼
+┌────────────────────────────────────────────────────────────────┐
+│                       微服务层                                  │
+├──────────────┬──────────────┬───────────────┬─────────────────┤
+│ 用户服务     │  学习服务     │   AI服务      │  支付服务       │
+│ user-svc    │ learning-svc │   ai-svc     │  payment-svc   │
+├──────────────┼──────────────┼───────────────┼─────────────────┤
+│ 成长服务     │  家长服务     │  内容服务     │  通知服务       │
+│ growth-svc  │ parent-svc   │ content-svc  │  notify-svc    │
+└──────────────┴──────────────┴───────────────┴─────────────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│   MySQL 主从    │ │    Redis 集群   │ │   MongoDB       │
+│   (核心业务)    │ │   (缓存/会话)   │ │  (日志/记录)    │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+                             │
+         ┌───────────────────┼───────────────────┐
+         ▼                   ▼                   ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│    OSS/CDN      │ │   消息队列      │ │  Elasticsearch  │
+│  (音频/图片)    │ │ (RabbitMQ/Kafka)│ │   (搜索/分析)   │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+                             │
+                             ▼
+┌────────────────────────────────────────────────────────────────┐
+│                      AI 服务层                                  │
+├────────────────────────┬───────────────────────────────────────┤
+│   语音评测引擎         │   自然语言处理                         │
+│  (讯飞/阿里云/自研)    │   (GPT API / 文心一言)                 │
+└────────────────────────┴───────────────────────────────────────┘
+```
+
+### 5.2 技术栈推荐
+
+| 层级 | 技术选型 | 说明 |
+|------|----------|------|
+| **客户端** | Flutter 3.x | 一套代码，iOS/Android双端 |
+| **小程序** | uni-app / 原生 | 微信小程序获客 |
+| **后端框架** | python) | 高性能，易维护 |
+| **API网关** | Kong / Nginx | 统一入口，限流熔断 |
+| **数据库** | MySQL | 核心业务数据 |
+| **缓存** | Redis 6.x Cluster | 会话、热数据缓存 |
+| **文档数据库** | MongoDB | 学习记录、日志 |
+| **对象存储** | 阿里云OSS / 腾讯COS | 音频、图片存储 |
+| **CDN** | 阿里云CDN | 静态资源加速 |
+| **消息队列** | RabbitMQ / Kafka | 异步任务处理 |
+| **语音AI** | 讯飞开放平台 / 阿里云 | 发音评测 |
+| **LLM** | OpenAI API / 文心一言 | AI辅导、智能推荐 |
+| **监控** | Prometheus + Grafana | 服务监控 |
+| **日志** | ELK Stack | 日志收集分析 |
+| **CI/CD** | GitHub Actions / Jenkins | 自动化部署 |
+| **容器** | Docker + K8s | 容器化部署 |
+
+### 5.3 第三方服务集成
+
+| 服务类型 | 推荐服务商 | 用途 |
+|----------|------------|------|
+| **短信** | 阿里云短信 / 腾讯云 | 验证码、通知 |
+| **支付** | 微信支付 + 支付宝 | 会员购买 |
+| **推送** | 极光推送 / 个推 | App消息推送 |
+| **语音评测** | 讯飞开放平台 | 发音评分 |
+| **TTS** | 阿里云语音合成 | 单词发音 |
+| **实名认证** | 阿里云实人认证 | 未成年人保护 |
+| **埋点分析** | 友盟+ / GrowingIO | 用户行为分析 |
+
+---
+
+## 六、开发排期建议
+
+### 6.1 MVP版本（6周）
+
+| 阶段 | 周次 | 核心任务 |
+|------|------|----------|
+| **P0核心功能** | W1-2 | 用户系统、教材同步、单词学习 |
+| **P0核心功能** | W3-4 | 记忆闯关、听写练习、积分打卡 |
+| **P1扩展功能** | W5 | AI发音评测MVP、学习报告 |
+| **测试上线** | W6 | 测试、修复、上线 |
+
+### 6.2 完整版本（12周）
+
+| 阶段 | 周次 | 核心任务 |
+|------|------|----------|
+| **MVP** | W1-6 | 见上 |
+| **AI深化** | W7-8 | AI诊断、智能推荐、发音专项训练 |
+| **家长端** | W9-10 | 家长中心、学情报告、辅导助手 |
+| **会员商业化** | W11 | 会员体系、支付、邀请裂变 |
+| **优化上线** | W12 | 性能优化、全量测试、上线 |
+
+# AI发音评测技术方案 & 支付流程设计
+
+---
+
+# 第一部分：AI发音评测详细技术方案
+
+---
+
+## 一、技术架构总览
+
+### 1.1 发音评测系统架构图
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              客户端层                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                         Flutter App                              │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │   │
+│  │  │ 录音模块    │  │ 音频处理    │  │ UI展示层                │  │   │
+│  │  │ AudioRecord │  │ 降噪/增强   │  │ 波形/评分/反馈动画      │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼ (音频上传 + 文本)
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              API网关层                                   │
+│                    (认证/限流/负载均衡/日志)                             │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           发音评测服务                                   │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                    Pronunciation Service                         │   │
+│  │  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐    │   │
+│  │  │ 请求校验  │─▶│ 音频预处理 │─▶│ AI引擎调度│─▶│ 结果处理  │    │   │
+│  │  │           │  │ 格式转换  │  │ 多引擎选择│  │ 标准化输出│    │   │
+│  │  └───────────┘  └───────────┘  └───────────┘  └───────────┘    │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┼───────────────┐
+                    ▼               ▼               ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          AI评测引擎层                                    │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐                 │
+│  │  讯飞开放   │    │  阿里云     │    │  自研引擎   │                 │
+│  │  平台API    │    │  智能语音   │    │  (可选)     │                 │
+│  │             │    │             │    │             │                 │
+│  │ • 发音评测  │    │ • 语音评测  │    │ • 深度学习  │                 │
+│  │ • 音素分析  │    │ • 实时转写  │    │ • 音素对齐  │                 │
+│  │ • 语调检测  │    │ • 多维评分  │    │ • 自定义模型│                 │
+│  └─────────────┘    └─────────────┘    └─────────────┘                 │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            数据存储层                                    │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│  │   MySQL     │  │   Redis     │  │   MongoDB   │  │    OSS      │   │
+│  │  评测记录   │  │  结果缓存   │  │  详细日志   │  │  音频文件   │   │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1.2 核心流程时序图
+
+```
+┌──────┐          ┌──────┐          ┌──────┐          ┌──────┐          ┌──────┐
+│Client│          │ API  │          │Pronun│          │  AI  │          │ OSS  │
+│ App  │          │ GW   │          │ Svc  │          │Engine│          │      │
+└──┬───┘          └──┬───┘          └──┬───┘          └──┬───┘          └──┬───┘
+   │                 │                 │                 │                 │
+   │ 1.开始录音      │                 │                 │                 │
+   │ ────────────>   │                 │                 │                 │
+   │ (本地录音)      │                 │                 │                 │
+   │                 │                 │                 │                 │
+   │ 2.录音结束      │                 │                 │                 │
+   │ (本地预处理)    │                 │                 │                 │
+   │                 │                 │                 │                 │
+   │ 3.上传音频+文本 │                 │                 │                 │
+   │ ─────────────────────────────────>│                 │                 │
+   │                 │                 │                 │                 │
+   │                 │                 │ 4.保存原始音频  │                 │
+   │                 │                 │ ─────────────────────────────────>│
+   │                 │                 │                 │   返回URL       │
+   │                 │                 │ <─────────────────────────────────│
+   │                 │                 │                 │                 │
+   │                 │                 │ 5.音频预处理    │                 │
+   │                 │                 │ (格式转换/降噪) │                 │
+   │                 │                 │                 │                 │
+   │                 │                 │ 6.调用AI评测    │                 │
+   │                 │                 │ ────────────────>│                 │
+   │                 │                 │                 │                 │
+   │                 │                 │                 │ 7.AI分析处理    │
+   │                 │                 │                 │ (ASR+评分)      │
+   │                 │                 │                 │                 │
+   │                 │                 │ 8.返回评测结果  │                 │
+   │                 │                 │ <────────────────│                 │
+   │                 │                 │                 │                 │
+   │                 │                 │ 9.结果后处理    │                 │
+   │                 │                 │ (评分映射/建议生成)               │
+   │                 │                 │                 │                 │
+   │                 │                 │ 10.保存评测记录 │                 │
+   │                 │                 │ (MySQL+MongoDB) │                 │
+   │                 │                 │                 │                 │
+   │ 11.返回评测结果 │                 │                 │                 │
+   │ <─────────────────────────────────│                 │                 │
+   │                 │                 │                 │                 │
+   │ 12.展示结果动画 │                 │                 │                 │
+   │ (评分/音素/建议)│                 │                 │                 │
+   │                 │                 │                 │                 │
+```
+
+---
+
+## 二、第三方AI引擎选型对比
+
+### 2.1 主流服务商对比
+
+| 对比维度 | 讯飞开放平台 | 阿里云智能语音 | 腾讯云语音 | 自研方案 |
+|----------|--------------|----------------|------------|----------|
+| **评测能力** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ |
+| **音素分析** | ✅ 支持 | ✅ 支持 | ❌ 不支持 | ✅ 可定制 |
+| **多维度评分** | ✅ 5维度 | ✅ 4维度 | ✅ 3维度 | ✅ 可定制 |
+| **儿童语音优化** | ✅ 专门优化 | ⚠️ 一般 | ⚠️ 一般 | ✅ 可训练 |
+| **响应速度** | ~500ms | ~600ms | ~700ms | ~800ms |
+| **价格（万次）** | ¥50-80 | ¥40-60 | ¥30-50 | 服务器成本 |
+| **SDK支持** | Android/iOS/Web | Android/iOS/Web | Android/iOS | 自定义 |
+| **推荐指数** | 🔥🔥🔥🔥🔥 | 🔥🔥🔥🔥 | 🔥🔥🔥 | 🔥🔥 |
+
+### 2.2 推荐方案：讯飞开放平台
+
+**选择理由**：
+1. 英语发音评测领域最专业，音素级分析能力最强
+2. 针对儿童语音有专门优化模型
+3. 接口稳定，文档完善
+4. 教育行业客户案例丰富
+
+### 2.3 讯飞API核心参数
+
+```yaml
+# 讯飞英语发音评测API
+接口地址: wss://ise-api.xfyun.cn/v2/open-ise
+请求方式: WebSocket
+
+# 核心参数
+{
+  "common": {
+    "app_id": "your_app_id"
+  },
+  "business": {
+    "category": "read_word",     # read_word/read_sentence/read_chapter
+    "rstcd": "utf8",
+    "group": "pupil",            # pupil(儿童)/adult(成人)
+    "check_type": "easy",        # easy/common/hard 评测难度
+    "grade": "junior",           # junior/middle/senior 年级
+    "ise_unite": "1",            # 返回音素级结果
+    "plev": "0"                  # 返回详细音素信息
+  },
+  "data": {
+    "status": 0,                 # 0-开始 1-继续 2-结束
+    "encoding": "raw",
+    "format": "audio/L16;rate=16000",
+    "text": "apple",             # 评测文本
+    "audio": "base64_audio"      # 音频数据
+  }
+}
+
+# 返回结果示例
+{
+  "code": 0,
+  "data": {
+    "xml_result": "...",         # XML格式详细结果
+    "total_score": 85.5,         # 总分
+    "accuracy_score": 82.0,      # 准确度
+    "fluency_score": 88.0,       # 流利度
+    "integrity_score": 90.0,     # 完整度
+    "phone_score": [             # 音素评分
+      {"content": "æ", "score": 75},
+      {"content": "p", "score": 95},
+      {"content": "l", "score": 88}
+    ]
+  }
+}
+```
+
+---
+
+## 三、后端服务详细设计
+
+### 3.1 服务模块划分
+
+```
+pronunciation-service/
+├── cmd/
+│   └── main.go                    # 服务入口
+├── internal/
+│   ├── handler/                   # HTTP处理器
+│   │   ├── evaluate.go            # 评测接口
+│   │   ├── diagnosis.go           # 诊断报告接口
+│   │   └── training.go            # 专项训练接口
+│   ├── service/                   # 业务逻辑层
+│   │   ├── pronunciation.go       # 发音评测服务
+│   │   ├── phoneme.go             # 音素分析服务
+│   │   └── report.go              # 报告生成服务
+│   ├── engine/                    # AI引擎适配层
+│   │   ├── interface.go           # 引擎接口定义
+│   │   ├── xunfei.go              # 讯飞引擎实现
+│   │   ├── aliyun.go              # 阿里云引擎实现
+│   │   └── factory.go             # 引擎工厂
+│   ├── audio/                     # 音频处理
+│   │   ├── converter.go           # 格式转换
+│   │   ├── enhancer.go            # 音频增强
+│   │   └── validator.go           # 音频校验
+│   ├── model/                     # 数据模型
+│   │   ├── evaluation.go          # 评测模型
+│   │   └── phoneme.go             # 音素模型
+│   └── repository/                # 数据访问层
+│       ├── mysql.go
+│       ├── redis.go
+│       └── mongodb.go
+├── pkg/
+│   ├── utils/                     # 工具函数
+│   └── constants/                 # 常量定义
+└── config/
+    └── config.yaml                # 配置文件
+```
+
+### 3.2 核心接口实现
+
+#### 评测接口详细设计
+
+```go
+// internal/handler/evaluate.go
+
+package handler
+
+import (
+    "github.com/gin-gonic/gin"
+)
+
+// EvaluateRequest 评测请求结构
+type EvaluateRequest struct {
+    Audio    []byte `form:"audio" binding:"required"`     // 音频文件
+    Text     string `form:"text" binding:"required"`      // 评测文本
+    WordID   string `form:"word_id"`                      // 单词ID（可选）
+    Type     string `form:"type" binding:"required"`      // word/sentence
+    UserID   string `json:"-"`                            // 从token解析
+}
+
+// EvaluateResponse 评测响应结构
+type EvaluateResponse struct {
+    EvaluationID string            `json:"evaluation_id"`
+    OverallScore int               `json:"overall_score"`
+    Scores       ScoreDetail       `json:"scores"`
+    Phonemes     []PhonemeResult   `json:"phonemes"`
+    WordsDetail  []WordResult      `json:"words_detail,omitempty"`
+    Comparison   AudioComparison   `json:"audio_comparison"`
+    Suggestions  []string          `json:"suggestions"`
+    PointsEarned int               `json:"points_earned"`
+}
+
+type ScoreDetail struct {
+    Accuracy     int `json:"accuracy"`      // 准确度 0-100
+    Fluency      int `json:"fluency"`       // 流利度 0-100
+    Completeness int `json:"completeness"`  // 完整度 0-100
+    Pronunciation int `json:"pronunciation"` // 发音 0-100
+}
+
+type PhonemeResult struct {
+    Phoneme    string  `json:"phoneme"`     // 音素符号
+    Score      int     `json:"score"`       // 音素得分
+    IsCorrect  bool    `json:"is_correct"`  // 是否正确
+    Suggestion string  `json:"suggestion"`  // 改进建议
+}
+
+type WordResult struct {
+    Word     string   `json:"word"`
+    Score    int      `json:"score"`
+    Phonemes []string `json:"phonemes"`
+}
+
+type AudioComparison struct {
+    StandardAudioURL    string `json:"standard_audio_url"`
+    UserAudioURL        string `json:"user_audio_url"`
+    WaveformCompareURL  string `json:"waveform_comparison_url"`
+}
+
+// Evaluate 发音评测处理器
+func (h *PronunciationHandler) Evaluate(c *gin.Context) {
+    var req EvaluateRequest
+    if err := c.ShouldBind(&req); err != nil {
+        c.JSON(400, gin.H{"code": 400, "message": "参数错误"})
+        return
+    }
+    
+    // 从token获取用户ID
+    req.UserID = c.GetString("user_id")
+    
+    // 调用服务层处理
+    result, err := h.pronunciationSvc.Evaluate(c.Request.Context(), &req)
+    if err != nil {
+        c.JSON(500, gin.H{"code": 500, "message": err.Error()})
+        return
+    }
+    
+    c.JSON(200, gin.H{"code": 200, "data": result})
+}
+```
+
+#### 服务层核心逻辑
+
+```go
+// internal/service/pronunciation.go
+
+package service
+
+import (
+    "context"
+    "time"
+)
+
+type PronunciationService struct {
+    engineFactory *engine.Factory
+    audioProc     *audio.Processor
+    repo          *repository.Repository
+    ossClient     *oss.Client
+}
+
+// Evaluate 核心评测逻辑
+func (s *PronunciationService) Evaluate(ctx context.Context, req *EvaluateRequest) (*EvaluateResponse, error) {
+    
+    // 1. 音频预处理
+    processedAudio, err := s.preprocessAudio(req.Audio)
+    if err != nil {
+        return nil, fmt.Errorf("audio preprocess failed: %w", err)
+    }
+    
+    // 2. 上传原始音频到OSS
+    audioURL, err := s.uploadAudio(ctx, req.UserID, processedAudio)
+    if err != nil {
+        return nil, fmt.Errorf("upload audio failed: %w", err)
+    }
+    
+    // 3. 获取AI引擎并调用评测
+    engine := s.engineFactory.GetEngine("xunfei") // 可配置
+    rawResult, err := engine.Evaluate(ctx, &engine.EvaluateInput{
+        Audio:    processedAudio,
+        Text:     req.Text,
+        Type:     req.Type,
+        UserType: "pupil", // 儿童模式
+    })
+    if err != nil {
+        return nil, fmt.Errorf("ai evaluate failed: %w", err)
+    }
+    
+    // 4. 结果后处理
+    result := s.processResult(rawResult, req.Text)
+    
+    // 5. 生成音素建议
+    result.Suggestions = s.generateSuggestions(result.Phonemes)
+    
+    // 6. 获取标准音频对比
+    result.Comparison = s.getAudioComparison(req.WordID, audioURL)
+    
+    // 7. 计算积分奖励
+    result.PointsEarned = s.calculatePoints(result.OverallScore)
+    
+    // 8. 保存评测记录
+    evaluationID, err := s.saveRecord(ctx, req, result)
+    if err != nil {
+        // 记录保存失败不影响返回结果，只记录日志
+        log.Errorf("save evaluation record failed: %v", err)
+    }
+    result.EvaluationID = evaluationID
+    
+    // 9. 异步更新用户统计数据
+    go s.updateUserStats(req.UserID, result)
+    
+    return result, nil
+}
+
+// preprocessAudio 音频预处理
+func (s *PronunciationService) preprocessAudio(audio []byte) ([]byte, error) {
+    // 1. 格式检测
+    format := s.audioProc.DetectFormat(audio)
+    
+    // 2. 转换为目标格式 (PCM 16kHz 16bit mono)
+    if format != audio.FormatPCM16K {
+        audio, err = s.audioProc.Convert(audio, audio.FormatPCM16K)
+        if err != nil {
+            return nil, err
+        }
+    }
+    
+    // 3. 音频增强（降噪、音量归一化）
+    audio = s.audioProc.Enhance(audio, &audio.EnhanceOptions{
+        NoiseReduce:     true,
+        VolumeNormalize: true,
+        TrimSilence:     true,
+    })
+    
+    // 4. 音频校验（时长、质量）
+    if err := s.audioProc.Validate(audio, &audio.ValidateOptions{
+        MinDuration: 0.3,  // 最短0.3秒
+        MaxDuration: 30.0, // 最长30秒
+        MinVolume:   -40,  // 最小音量dB
+    }); err != nil {
+        return nil, err
+    }
+    
+    return audio, nil
+}
+
+// generateSuggestions 生成改进建议
+func (s *PronunciationService) generateSuggestions(phonemes []PhonemeResult) []string {
+    var suggestions []string
+    
+    // 音素建议映射表
+    phonemeTips := map[string]string{
+        "θ":  "发 /θ/ 音时，舌尖轻触上齿，让气流从舌头和牙齿之间通过",
+        "ð":  "发 /ð/ 音时，与 /θ/ 类似，但要振动声带",
+        "æ":  "发 /æ/ 音时，嘴巴张大，舌头放低平，嘴角向两边咧开",
+        "ʌ":  "发 /ʌ/ 音时，嘴巴微张，舌头放松置于口腔中部",
+        "ə":  "发 /ə/ 音时，嘴巴自然张开，舌头放松",
+        "ɪ":  "发 /ɪ/ 音时，嘴角微微咧开，舌头前部稍微抬起",
+        "ʊ":  "发 /ʊ/ 音时，嘴唇稍微收圆，舌后部抬起",
+        "r":  "发 /r/ 音时，舌尖向上卷起但不要接触上颚",
+        "l":  "发 /l/ 音时，舌尖抵住上齿龈",
+        "w":  "发 /w/ 音时，双唇收圆向前突出",
+    }
+    
+    for _, p := range phonemes {
+        if !p.IsCorrect && p.Score < 70 {
+            if tip, ok := phonemeTips[p.Phoneme]; ok {
+                suggestions = append(suggestions, tip)
+            }
+        }
+    }
+    
+    // 去重并限制数量
+    suggestions = uniqueStrings(suggestions)
+    if len(suggestions) > 3 {
+        suggestions = suggestions[:3]
+    }
+    
+    // 添加鼓励语
+    if len(suggestions) == 0 {
+        suggestions = append(suggestions, "发音很标准，继续保持！")
+    }
+    
+    return suggestions
+}
+```
+
+#### AI引擎适配层
+
+```go
+// internal/engine/interface.go
+
+package engine
+
+import "context"
+
+// Engine AI评测引擎接口
+type Engine interface {
+    // Evaluate 执行评测
+    Evaluate(ctx context.Context, input *EvaluateInput) (*EvaluateOutput, error)
+    // GetName 获取引擎名称
+    GetName() string
+    // HealthCheck 健康检查
+    HealthCheck(ctx context.Context) error
+}
+
+type EvaluateInput struct {
+    Audio    []byte
+    Text     string
+    Type     string // word/sentence/paragraph
+    UserType string // pupil/adult
+}
+
+type EvaluateOutput struct {
+    TotalScore       float64           `json:"total_score"`
+    AccuracyScore    float64           `json:"accuracy_score"`
+    FluencyScore     float64           `json:"fluency_score"`
+    IntegrityScore   float64           `json:"integrity_score"`
+    PhonemeScores    []PhonemeScore    `json:"phoneme_scores"`
+    WordScores       []WordScore       `json:"word_scores,omitempty"`
+    RawResult        string            `json:"raw_result"` // 原始返回
+}
+
+type PhonemeScore struct {
+    Phoneme  string  `json:"phoneme"`
+    Score    float64 `json:"score"`
+    StartMs  int     `json:"start_ms"`
+    EndMs    int     `json:"end_ms"`
+}
+
+type WordScore struct {
+    Word     string         `json:"word"`
+    Score    float64        `json:"score"`
+    Phonemes []PhonemeScore `json:"phonemes"`
+}
+```
+
+```go
+// internal/engine/xunfei.go
+
+package engine
+
+import (
+    "context"
+    "encoding/base64"
+    "encoding/json"
+    "github.com/gorilla/websocket"
+)
+
+type XunfeiEngine struct {
+    appID     string
+    apiKey    string
+    apiSecret string
+    wsURL     string
+}
+
+func NewXunfeiEngine(config *XunfeiConfig) *XunfeiEngine {
+    return &XunfeiEngine{
+        appID:     config.AppID,
+        apiKey:    config.APIKey,
+        apiSecret: config.APISecret,
+        wsURL:     "wss://ise-api.xfyun.cn/v2/open-ise",
+    }
+}
+
+func (e *XunfeiEngine) Evaluate(ctx context.Context, input *EvaluateInput) (*EvaluateOutput, error) {
+    // 1. 构建认证URL
+    authURL := e.buildAuthURL()
+    
+    // 2. 建立WebSocket连接
+    conn, _, err := websocket.DefaultDialer.DialContext(ctx, authURL, nil)
+    if err != nil {
+        return nil, fmt.Errorf("websocket dial failed: %w", err)
+    }
+    defer conn.Close()
+    
+    // 3. 发送第一帧（参数帧）
+    firstFrame := e.buildFirstFrame(input)
+    if err := conn.WriteJSON(firstFrame); err != nil {
+        return nil, fmt.Errorf("send first frame failed: %w", err)
+    }
+    
+    // 4. 分帧发送音频数据
+    audioBase64 := base64.StdEncoding.EncodeToString(input.Audio)
+    frameSize := 1280 // 每帧大小
+    totalFrames := (len(audioBase64) + frameSize - 1) / frameSize
+    
+    for i := 0; i < totalFrames; i++ {
+        start := i * frameSize
+        end := start + frameSize
+        if end > len(audioBase64) {
+            end = len(audioBase64)
+        }
+        
+        status := 1 // 中间帧
+        if i == totalFrames-1 {
+            status = 2 // 最后一帧
+        }
+        
+        frame := e.buildAudioFrame(audioBase64[start:end], status)
+        if err := conn.WriteJSON(frame); err != nil {
+            return nil, fmt.Errorf("send audio frame failed: %w", err)
+        }
+        
+        time.Sleep(40 * time.Millisecond) // 控制发送速率
+    }
+    
+    // 5. 接收评测结果
+    var result XunfeiResponse
+    for {
+        _, message, err := conn.ReadMessage()
+        if err != nil {
+            return nil, fmt.Errorf("read message failed: %w", err)
+        }
+        
+        if err := json.Unmarshal(message, &result); err != nil {
+            return nil, fmt.Errorf("parse response failed: %w", err)
+        }
+        
+        if result.Code != 0 {
+            return nil, fmt.Errorf("xunfei error: %s", result.Message)
+        }
+        
+        if result.Data.Status == 2 { // 评测完成
+            break
+        }
+    }
+    
+    // 6. 解析XML结果
+    output := e.parseResult(result.Data.Data)
+    
+    return output, nil
+}
+
+// buildFirstFrame 构建首帧
+func (e *XunfeiEngine) buildFirstFrame(input *EvaluateInput) map[string]interface{} {
+    category := "read_word"
+    if input.Type == "sentence" {
+        category = "read_sentence"
+    }
+    
+    return map[string]interface{}{
+        "common": map[string]interface{}{
+            "app_id": e.appID,
+        },
+        "business": map[string]interface{}{
+            "category":   category,
+            "rstcd":      "utf8",
+            "group":      input.UserType,
+            "check_type": "easy",
+            "ise_unite":  "1",
+            "plev":       "0",
+        },
+        "data": map[string]interface{}{
+            "status":   0,
+            "encoding": "raw",
+            "format":   "audio/L16;rate=16000",
+            "text":     "\ufeff" + input.Text, // BOM + 文本
+        },
+    }
+}
+
+// parseResult 解析讯飞返回的XML结果
+func (e *XunfeiEngine) parseResult(xmlData string) *EvaluateOutput {
+    // 解析XML并转换为标准输出格式
+    // ... 解析逻辑
+    
+    return &EvaluateOutput{
+        TotalScore:     85.5,
+        AccuracyScore:  82.0,
+        FluencyScore:   88.0,
+        IntegrityScore: 90.0,
+        PhonemeScores: []PhonemeScore{
+            {Phoneme: "æ", Score: 75},
+            {Phoneme: "p", Score: 95},
+            {Phoneme: "l", Score: 88},
+        },
+        RawResult: xmlData,
+    }
+}
+
+func (e *XunfeiEngine) GetName() string {
+    return "xunfei"
+}
+
+func (e *XunfeiEngine) HealthCheck(ctx context.Context) error {
+    // 健康检查逻辑
+    return nil
+}
+```
+
+### 3.3 详细API接口文档
+
+```yaml
+# =====================================
+# 发音评测接口 - OpenAPI 3.0 规范
+# =====================================
+
+openapi: 3.0.0
+info:
+  title: 狮子英语 - 发音评测API
+  version: 1.0.0
+
+paths:
+  /api/v1/pronunciation/evaluate:
+    post:
+      summary: 发音评测
+      description: 上传录音进行AI发音评测，返回多维度评分和改进建议
+      tags:
+        - 发音评测
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - audio
+                - text
+                - type
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: 音频文件，支持wav/mp3/m4a，最大5MB，时长0.3-30秒
+                text:
+                  type: string
+                  description: 评测文本内容
+                  example: "apple"
+                type:
+                  type: string
+                  enum: [word, sentence]
+                  description: 评测类型
+                word_id:
+                  type: string
+                  description: 关联单词ID（可选，用于记录学习进度）
+      responses:
+        200:
+          description: 评测成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluateResponse'
+        400:
+          description: 参数错误
+        401:
+          description: 未授权
+        403:
+          description: 会员等级不足
+        500:
+          description: 服务器错误
+
+  /api/v1/pronunciation/evaluate/realtime:
+    get:
+      summary: 实时发音评测（WebSocket）
+      description: 建立WebSocket连接进行流式评测，适用于长句朗读
+      tags:
+        - 发音评测
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 认证token
+
+  /api/v1/pronunciation/diagnosis:
+    get:
+      summary: 获取发音诊断报告
+      tags:
+        - 发音诊断
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [week, month, all]
+            default: week
+      responses:
+        200:
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosisReport'
+
+  /api/v1/pronunciation/training/{phoneme}:
+    get:
+      summary: 获取音素专项训练内容
+      tags:
+        - 专项训练
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: phoneme
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 音素符号，如 θ, æ, ð
+      responses:
+        200:
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhonemeTraining'
+
+  /api/v1/pronunciation/history:
+    get:
+      summary: 获取评测历史记录
+      tags:
+        - 发音评测
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: word_id
+          in: query
+          schema:
+            type: string
+          description: 按单词筛选
+      responses:
+        200:
+          description: 成功
+
+components:
+  schemas:
+    EvaluateResponse:
+      type: object
+      properties:
+        evaluation_id:
+          type: string
+          example: "eval_20240115_001"
+        overall_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 85
+        scores:
+          type: object
+          properties:
+            accuracy:
+              type: integer
+              description: 准确度
+            fluency:
+              type: integer
+              description: 流利度
+            completeness:
+              type: integer
+              description: 完整度
+            pronunciation:
+              type: integer
+              description: 发音
+        phonemes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhonemeResult'
+        words_detail:
+          type: array
+          items:
+            type: object
+            properties:
+              word:
+                type: string
+              score:
+                type: integer
+              phonemes:
+                type: array
+                items:
+                  type: string
+        audio_comparison:
+          type: object
+          properties:
+            standard_audio_url:
+              type: string
+            user_audio_url:
+              type: string
+            waveform_comparison_url:
+              type: string
+        suggestions:
+          type: array
+          items:
+            type: string
+        points_earned:
+          type: integer
+          description: 获得的积分
+
+    PhonemeResult:
+      type: object
+      properties:
+        phoneme:
+          type: string
+          example: "æ"
+        score:
+          type: integer
+          example: 75
+        is_correct:
+          type: boolean
+        suggestion:
+          type: string
+          example: "嘴巴张大一些，舌头放低"
+
+    DiagnosisReport:
+      type: object
+      properties:
+        overall_score:
+          type: integer
+        total_practices:
+          type: integer
+        practice_duration:
+          type: integer
+          description: 总练习时长（秒）
+        score_trend:
+          type: array
+          items:
+            type: integer
+        dimension_scores:
+          type: object
+        weak_phonemes:
+          type: array
+          items:
+            type: object
+            properties:
+              phoneme:
+                type: string
+              name:
+                type: string
+              avg_score:
+                type: integer
+              practice_count:
+                type: integer
+              example_words:
+                type: array
+                items:
+                  type: string
+              tutorial_video_url:
+                type: string
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+```
+
+---
+
+## 四、客户端实现
+
+### 4.1 Flutter录音模块
+
+```dart
+// lib/modules/pronunciation/audio_recorder.dart
+
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:record/record.dart';
+import 'package:path_provider/path_provider.dart';
+
+class AudioRecorder {
+  final Record _recorder = Record();
+  String? _currentPath;
+  Timer? _amplitudeTimer;
+  final StreamController<double> _amplitudeController = StreamController<double>.broadcast();
+  
+  Stream<double> get amplitudeStream => _amplitudeController.stream;
+  
+  /// 开始录音
+  Future<void> startRecording() async {
+    // 检查权限
+    if (!await _recorder.hasPermission()) {
+      throw Exception('没有录音权限');
+    }
+    
+    // 生成临时文件路径
+    final directory = await getTemporaryDirectory();
+    _currentPath = '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.wav';
+    
+    // 配置录音参数
+    await _recorder.start(
+      path: _currentPath,
+      encoder: AudioEncoder.wav,       // WAV格式
+      bitRate: 256000,                  // 比特率
+      samplingRate: 16000,              // 16kHz采样率
+      numChannels: 1,                   // 单声道
+    );
+    
+    // 开始监听音量
+    _startAmplitudeMonitor();
+  }
+  
+  /// 停止录音
+  Future<Uint8List?> stopRecording() async {
+    _stopAmplitudeMonitor();
+    
+    final path = await _recorder.stop();
+    if (path == null) return null;
+    
+    // 读取音频文件
+    final file = File(path);
+    final audioData = await file.readAsBytes();
+    
+    // 删除临时文件
+    await file.delete();
+    
+    return audioData;
+  }
+  
+  /// 取消录音
+  Future<void> cancelRecording() async {
+    _stopAmplitudeMonitor();
+    await _recorder.stop();
+    
+    if (_currentPath != null) {
+      final file = File(_currentPath!);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+  }
+  
+  /// 监听音量变化（用于波形动画）
+  void _startAmplitudeMonitor() {
+    _amplitudeTimer = Timer.periodic(
+      const Duration(milliseconds: 50),
+      (_) async {
+        final amplitude = await _recorder.getAmplitude();
+        _amplitudeController.add(amplitude.current);
+      },
+    );
+  }
+  
+  void _stopAmplitudeMonitor() {
+    _amplitudeTimer?.cancel();
+    _amplitudeTimer = null;
+  }
+  
+  void dispose() {
+    _stopAmplitudeMonitor();
+    _amplitudeController.close();
+    _recorder.dispose();
+  }
+}
+```
+
+### 4.2 Flutter发音评测页面
+
+```dart
+// lib/modules/pronunciation/pages/read_along_page.dart
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/pronunciation_bloc.dart';
+import '../widgets/waveform_visualizer.dart';
+import '../widgets/score_animation.dart';
+import '../widgets/phoneme_feedback.dart';
+
+class ReadAlongPage extends StatefulWidget {
+  final String wordId;
+  final String word;
+  final String phonetic;
+  final String audioUrl;
+  
+  const ReadAlongPage({
+    Key? key,
+    required this.wordId,
+    required this.word,
+    required this.phonetic,
+    required this.audioUrl,
+  }) : super(key: key);
+
+  @override
+  State<ReadAlongPage> createState() => _ReadAlongPageState();
+}
+
+class _ReadAlongPageState extends State<ReadAlongPage> 
+    with SingleTickerProviderStateMixin {
+  
+  late PronunciationBloc _bloc;
+  late AnimationController _recordAnimController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _bloc = context.read<PronunciationBloc>();
+    _recordAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('跟读练习'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: _showTips,
+          ),
+        ],
+      ),
+      body: BlocBuilder<PronunciationBloc, PronunciationState>(
+        builder: (context, state) {
+          return Column(
+            children: [
+              // 单词展示区
+              _buildWordDisplay(),
+              
+              // 标准发音播放
+              _buildStandardAudio(),
+              
+              // 波形可视化
+              if (state is RecordingState || state is EvaluatingState)
+                _buildWaveform(state),
+              
+              // 评分结果展示
+              if (state is EvaluatedState)
+                _buildScoreResult(state),
+              
+              const Spacer(),
+              
+              // 录音按钮
+              _buildRecordButton(state),
+              
+              const SizedBox(height: 40),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  
+  Widget _buildWordDisplay() {
+    return Container(
+      padding: const EdgeInsets.all(30),
+      child: Column(
+        children: [
+          Text(
+            widget.word,
+            style: const TextStyle(
+              fontSize: 48,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            widget.phonetic,
+            style: TextStyle(
+              fontSize: 20,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildStandardAudio() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: OutlinedButton.icon(
+        onPressed: () {
+          _bloc.add(PlayStandardAudio(widget.audioUrl));
+        },
+        icon: const Icon(Icons.volume_up),
+        label: const Text('听标准发音'),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildWaveform(PronunciationState state) {
+    return Container(
+      height: 100,
+      margin: const EdgeInsets.all(20),
+      child: WaveformVisualizer(
+        amplitudeStream: _bloc.amplitudeStream,
+        isRecording: state is RecordingState,
+      ),
+    );
+  }
+  
+  Widget _buildScoreResult(EvaluatedState state) {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // 总分动画
+          ScoreAnimation(
+            score: state.result.overallScore,
+            onAnimationComplete: () {},
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // 多维度评分
+          _buildDimensionScores(state.result.scores),
+          
+          const SizedBox(height: 20),
+          
+          // 音素反馈
+          PhonemeFeedback(
+            word: widget.word,
+            phonemes: state.result.phonemes,
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // 改进建议
+          if (state.result.suggestions.isNotEmpty)
+            _buildSuggestions(state.result.suggestions),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildDimensionScores(ScoreDetail scores) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildScoreItem('准确度', scores.accuracy, Colors.blue),
+        _buildScoreItem('流利度', scores.fluency, Colors.green),
+        _buildScoreItem('完整度', scores.completeness, Colors.orange),
+      ],
+    );
+  }
+  
+  Widget _buildScoreItem(String label, int score, Color color) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(
+                value: score / 100,
+                strokeWidth: 4,
+                backgroundColor: color.withOpacity(0.2),
+                valueColor: AlwaysStoppedAnimation(color),
+              ),
+            ),
+            Text(
+              '$score',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildSuggestions(List<String> suggestions) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber[50],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb, color: Colors.amber[700], size: 20),
+              const SizedBox(width: 8),
+              Text(
+                '改进建议',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.amber[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...suggestions.map((s) => Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text('• $s', style: const TextStyle(fontSize: 14)),
+          )),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildRecordButton(PronunciationState state) {
+    final isRecording = state is RecordingState;
+    final isEvaluating = state is EvaluatingState;
+    
+    return GestureDetector(
+      onLongPressStart: (_) {
+        if (!isEvaluating) {
+          _startRecording();
+        }
+      },
+      onLongPressEnd: (_) {
+        if (isRecording) {
+          _stopRecording();
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: isRecording ? 100 : 80,
+        height: isRecording ? 100 : 80,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isRecording ? Colors.red : Theme.of(context).primaryColor,
+          boxShadow: [
+            BoxShadow(
+              color: (isRecording ? Colors.red : Theme.of(context).primaryColor)
+                  .withOpacity(0.3),
+              blurRadius: isRecording ? 20 : 10,
+              spreadRadius: isRecording ? 5 : 2,
+            ),
+          ],
+        ),
+        child: Center(
+          child: isEvaluating
+              ? const SizedBox(
+                  width: 30,
+                  height: 30,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                )
+              : Icon(
+                  isRecording ? Icons.stop : Icons.mic,
+                  color: Colors.white,
+                  size: 36,
+                ),
+        ),
+      ),
+    );
+  }
+  
+  void _startRecording() {
+    HapticFeedback.mediumImpact();
+    _recordAnimController.repeat();
+    _bloc.add(StartRecording(
+      wordId: widget.wordId,
+      text: widget.word,
+    ));
+  }
+  
+  void _stopRecording() {
+    HapticFeedback.lightImpact();
+    _recordAnimController.stop();
+    _bloc.add(StopRecordingAndEvaluate());
+  }
+  
+  void _showTips() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('使用提示', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            SizedBox(height: 16),
+            Text('1. 点击"听标准发音"先听一遍'),
+            Text('2. 长按麦克风按钮开始录音'),
+            Text('3. 松开按钮结束录音并评测'),
+            Text('4. 查看评分和改进建议'),
+            SizedBox(height: 16),
+            Text('💡 小贴士：保持安静的环境效果更好哦！'),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  @override
+  void dispose() {
+    _recordAnimController.dispose();
+    super.dispose();
+  }
+}
+```
+
+### 4.3 波形可视化组件
+
+```dart
+// lib/modules/pronunciation/widgets/waveform_visualizer.dart
+
+import 'dart:async';
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+
+class WaveformVisualizer extends StatefulWidget {
+  final Stream<double> amplitudeStream;
+  final bool isRecording;
+  
+  const WaveformVisualizer({
+    Key? key,
+    required this.amplitudeStream,
+    required this.isRecording,
+  }) : super(key: key);
+
+  @override
+  State<WaveformVisualizer> createState() => _WaveformVisualizerState();
+}
+
+class _WaveformVisualizerState extends State<WaveformVisualizer>
+    with SingleTickerProviderStateMixin {
+  
+  final List<double> _amplitudes = List.filled(50, 0.0);
+  late AnimationController _animController;
+  StreamSubscription<double>? _subscription;
+  
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    )..repeat();
+    
+    _subscription = widget.amplitudeStream.listen((amplitude) {
+      if (mounted && widget.isRecording) {
+        setState(() {
+          _amplitudes.removeAt(0);
+          // 将分贝值转换为0-1范围
+          final normalized = ((amplitude + 60) / 60).clamp(0.0, 1.0);
+          _amplitudes.add(normalized);
+        });
+      }
+    });
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animController,
+      builder: (context, child) {
+        return CustomPaint(
+          size: Size.infinite,
+          painter: WaveformPainter(
+            amplitudes: _amplitudes,
+            color: widget.isRecording ? Colors.red : Colors.blue,
+            animationValue: _animController.value,
+          ),
+        );
+      },
+    );
+  }
+  
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    _animController.dispose();
+    super.dispose();
+  }
+}
+
+class WaveformPainter extends CustomPainter {
+  final List<double> amplitudes;
+  final Color color;
+  final double animationValue;
+  
+  WaveformPainter({
+    required this.amplitudes,
+    required this.color,
+    required this.animationValue,
+  });
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    
+    final barWidth = size.width / amplitudes.length;
+    final centerY = size.height / 2;
+    final maxBarHeight = size.height * 0.8;
+    
+    for (int i = 0; i < amplitudes.length; i++) {
+      final x = i * barWidth + barWidth / 2;
+      final amplitude = amplitudes[i];
+      
+      // 添加动画波动效果
+      final wave = math.sin((i / amplitudes.length + animationValue) * 2 * math.pi) * 0.1;
+      final barHeight = maxBarHeight * (amplitude + wave).clamp(0.05, 1.0);
+      
+      canvas.drawLine(
+        Offset(x, centerY - barHeight / 2),
+        Offset(x, centerY + barHeight / 2),
+        paint,
+      );
+    }
+  }
+  
+  @override
+  bool shouldRepaint(covariant WaveformPainter oldDelegate) {
+    return true;
+  }
+}
+```
+
+---
+
+## 五、评分算法详解
+
+### 5.1 评分维度与权重
+
+| 维度 | 英文 | 权重 | 说明 |
+|------|------|------|------|
+| **准确度** | Accuracy | 40% | 发音是否正确，音素级评估 |
+| **流利度** | Fluency | 25% | 语速是否自然，停顿是否合理 |
+| **完整度** | Completeness | 20% | 内容是否完整，有无遗漏 |
+| **韵律** | Prosody | 15% | 重音、语调是否正确 |
+
+### 5.2 综合评分计算
+
+```python
+def calculate_overall_score(scores: dict) -> int:
+    """
+    计算综合评分
+    """
+    weights = {
+        'accuracy': 0.40,
+        'fluency': 0.25,
+        'completeness': 0.20,
+        'prosody': 0.15
+    }
+    
+    # 加权平均
+    weighted_sum = sum(
+        scores.get(dim, 0) * weight 
+        for dim, weight in weights.items()
+    )
+    
+    # 年龄调整（儿童适当提分）
+    age_bonus = 5 if user_type == 'pupil' else 0
+    
+    # 最终分数
+    final_score = min(100, int(weighted_sum + age_bonus))
+    
+    return final_score
+```
+
+### 5.3 音素评分映射
+
+```python
+def map_phoneme_score(raw_score: float) -> dict:
+    """
+    将原始音素分数映射为反馈信息
+    """
+    if raw_score >= 80:
+        return {
+            'level': 'excellent',
+            'is_correct': True,
+            'feedback': '发音标准！'
+        }
+    elif raw_score >= 60:
+        return {
+            'level': 'good',
+            'is_correct': True,
+            'feedback': '发音不错，可以更标准'
+        }
+    elif raw_score >= 40:
+        return {
+            'level': 'fair',
+            'is_correct': False,
+            'feedback': '需要改进，注意口型'
+        }
+    else:
+        return {
+            'level': 'poor',
+            'is_correct': False,
+            'feedback': '发音有误，请跟读练习'
+        }
+```
+
+---
+
+# 第二部分：支付流程详细设计
+
+---
+
+## 一、支付系统架构
+
+### 1.1 整体架构图
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              客户端层                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                         App / 小程序                             │   │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐  │   │
+│  │  │ 商品展示    │  │ 订单确认    │  │ 支付组件                │  │   │
+│  │  │ 会员套餐    │  │ 优惠计算    │  │ 微信/支付宝SDK          │  │   │
+│  │  └─────────────┘  └─────────────┘  └─────────────────────────┘  │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              API网关层                                   │
+│            (认证/限流/幂等性校验/请求签名验证)                           │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            订单支付服务                                  │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                      Order & Payment Service                     │   │
+│  │                                                                  │   │
+│  │  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐    │   │
+│  │  │ 订单管理  │  │ 价格计算  │  │ 支付路由  │  │ 回调处理  │    │   │
+│  │  │ 创建/查询 │  │ 优惠/折扣 │  │ 渠道选择  │  │ 状态同步  │    │   │
+│  │  └───────────┘  └───────────┘  └───────────┘  └───────────┘    │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+         ┌──────────────────────────┼──────────────────────────┐
+         ▼                          ▼                          ▼
+┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
+│   微信支付       │      │   支付宝        │      │   Apple Pay     │
+│  (App/小程序)    │      │   (App)         │      │   (iOS IAP)     │
+│                 │      │                 │      │                 │
+│ • 统一下单      │      │ • 交易创建      │      │ • 票据验证      │
+│ • 支付回调      │      │ • 异步通知      │      │ • 订阅管理      │
+│ • 退款          │      │ • 退款          │      │ • 退款          │
+└─────────────────┘      └─────────────────┘      └─────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            数据存储层                                    │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│  │   MySQL     │  │   Redis     │  │   MQ        │  │   对账文件   │   │
+│  │  订单表     │  │  支付状态   │  │  异步任务   │  │   OSS存储   │   │
+│  │  流水表     │  │  幂等Key    │  │  通知队列   │  │             │   │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 二、核心流程时序图
+
+### 2.1 微信支付完整时序图
+
+```
+┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐
+│ App  │     │  GW  │     │Order │     │Pay   │     │ 微信  │     │Member│
+│Client│     │      │     │ Svc  │     │ Svc  │     │ API  │     │ Svc  │
+└──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘
+   │            │            │            │            │            │
+   │ 1.选择套餐 │            │            │            │            │
+   │ ──────────>│            │            │            │            │
+   │            │            │            │            │            │
+   │ 2.获取会员套餐列表      │            │            │            │
+   │ ───────────────────────>│            │            │            │
+   │            │            │            │            │            │
+   │ 3.返回套餐信息（含价格）│            │            │            │
+   │ <───────────────────────│            │            │            │
+   │            │            │            │            │            │
+   │ 4.确认购买（套餐ID+优惠码）          │            │            │
+   │ ───────────────────────>│            │            │            │
+   │            │            │            │            │            │
+   │            │            │ 5.计算价格 │            │            │
+   │            │            │ (原价-优惠)│            │            │
+   │            │            │ ──────────>│            │            │
+   │            │            │            │            │            │
+   │            │            │ 6.创建订单 │            │            │
+   │            │            │ (待支付)   │            │            │
+   │            │            │ ──────────>│            │            │
+   │            │            │            │            │            │
+   │            │            │            │ 7.调用微信统一下单        │
+   │            │            │            │ ───────────────────────>│
+   │            │            │            │            │            │
+   │            │            │            │ 8.返回prepay_id          │
+   │            │            │            │ <───────────────────────│
+   │            │            │            │            │            │
+   │            │            │ 9.返回支付参数          │            │
+   │            │            │ (签名后)   │            │            │
+   │            │            │ <──────────│            │            │
+   │            │            │            │            │            │
+   │ 10.返回支付参数         │            │            │            │
+   │ <───────────────────────│            │            │            │
+   │            │            │            │            │            │
+   │ 11.调起微信支付         │            │            │            │
+   │ ─────────────────────────────────────────────────>│            │
+   │            │            │            │            │            │
+   │ 12.用户完成支付         │            │            │            │
+   │ <─────────────────────────────────────────────────│            │
+   │            │            │            │            │            │
+   │ 13.支付结果(本地)       │            │            │            │
+   │ ──────────>│            │            │            │            │
+   │            │            │            │            │            │
+   │            │            │            │ 14.微信回调通知          │
+   │            │            │            │ <───────────────────────│
+   │            │            │            │            │            │
+   │            │            │            │ 15.验证签名              │
+   │            │            │            │ 幂等性检查               │
+   │            │            │            │ ──────────>│            │
+   │            │            │            │            │            │
+   │            │            │ 16.更新订单状态         │            │
+   │            │            │ (已支付)   │            │            │
+   │            │            │ <──────────│            │            │
+   │            │            │            │            │            │
+   │            │            │            │            │ 17.开通会员│
+   │            │            │            │            │ ──────────>│
+   │            │            │            │            │            │
+   │            │            │            │            │ 18.返回结果│
+   │            │            │            │            │ <──────────│
+   │            │            │            │            │            │
+   │            │            │            │ 19.返回SUCCESS          │
+   │            │            │            │ ───────────────────────>│
+   │            │            │            │            │            │
+   │ 20.轮询订单状态         │            │            │            │
+   │ ───────────────────────>│            │            │            │
+   │            │            │            │            │            │
+   │ 21.返回支付成功+会员信息│            │            │            │
+   │ <───────────────────────│            │            │            │
+   │            │            │            │            │            │
+   │ 22.展示支付成功页面     │            │            │            │
+   │            │            │            │            │            │
+```
+
+### 2.2 支付宝支付时序图
+
+```
+┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐
+│ App  │     │  GW  │     │Order │     │Pay   │     │支付宝 │     │Member│
+│Client│     │      │     │ Svc  │     │ Svc  │     │ API  │     │ Svc  │
+└──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘
+   │            │            │            │            │            │
+   │ 1.选择套餐+支付宝支付   │            │            │            │
+   │ ───────────────────────>│            │            │            │
+   │            │            │            │            │            │
+   │            │            │ 2.创建订单 │            │            │
+   │            │            │ ──────────>│            │            │
+   │            │            │            │            │            │
+   │            │            │            │ 3.调用支付宝创建交易     │
+   │            │            │            │ ───────────────────────>│
+   │            │            │            │            │            │
+   │            │            │            │ 4.返回支付串orderString  │
+   │            │            │            │ <───────────────────────│
+   │            │            │            │            │            │
+   │ 5.返回orderString       │            │            │            │
+   │ <───────────────────────│            │            │            │
+   │            │            │            │            │            │
+   │ 6.调起支付宝App         │            │            │            │
+   │ ─────────────────────────────────────────────────>│            │
+   │            │            │            │            │            │
+   │ 7.用户完成支付          │            │            │            │
+   │ <─────────────────────────────────────────────────│            │
+   │            │            │            │            │            │
+   │ 8.同步回调(结果码)      │            │            │            │
+   │ ──────────>│            │            │            │            │
+   │            │            │            │            │            │
+   │            │            │            │ 9.支付宝异步通知         │
+   │            │            │            │ <───────────────────────│
+   │            │            │            │            │            │
+   │            │            │            │ 10.验签+处理             │
+   │            │            │            │ ──────────────────────> │
+   │            │            │            │            │            │
+   │            │            │ 11.更新订单│            │            │
+   │            │            │ <──────────│            │            │
+   │            │            │            │            │ 12.开通会员│
+   │            │            │            │            │ ──────────>│
+   │            │            │            │            │            │
+   │            │            │            │ 13.返回success          │
+   │            │            │            │ ───────────────────────>│
+   │            │            │            │            │            │
+   │ 14.查询订单状态         │            │            │            │
+   │ ───────────────────────>│            │            │            │
+   │            │            │            │            │            │
+   │ 15.返回支付成功         │            │            │            │
+   │ <───────────────────────│            │            │            │
+   │            │            │            │            │            │
+```
+
+### 2.3 iOS内购(IAP)时序图
+
+```
+┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐     ┌──────┐
+│ iOS  │     │Store │     │  GW  │     │Order │     │ Apple│     │Member│
+│ App  │     │ Kit  │     │      │     │ Svc  │     │Server│     │ Svc  │
+└──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘     └──┬───┘
+   │            │            │            │            │            │
+   │ 1.获取商品│            │            │            │            │
+   │ ─────────>│            │            │            │            │
+   │            │            │            │            │            │
+   │            │ 2.请求App Store商品信息│            │            │
+   │            │ ───────────────────────────────────>│            │
+   │            │            │            │            │            │
+   │            │ 3.返回SKProduct        │            │            │
+   │            │ <───────────────────────────────────│            │
+   │            │            │            │            │            │
+   │ 4.展示价格│            │            │            │            │
+   │ <─────────│            │            │            │            │
+   │            │            │            │            │            │
+   │ 5.用户点击购买          │            │            │            │
+   │ ─────────>│            │            │            │            │
+   │            │            │            │            │            │
+   │            │ 6.发起购买(SKPayment)  │            │            │
+   │            │ ───────────────────────────────────>│            │
+   │            │            │            │            │            │
+   │            │ 7.用户确认支付(Face ID/Touch ID)    │            │
+   │            │ <───────────────────────────────────│            │
+   │            │            │            │            │            │
+   │            │ 8.返回transaction+receipt           │            │
+   │            │ <───────────────────────────────────│            │
+   │            │            │            │            │            │
+   │ 9.获得receipt          │            │            │            │
+   │ <─────────│            │            │            │            │
+   │            │            │            │            │            │
+   │ 10.上传receipt验证      │            │            │            │
+   │ ─────────────────────────────────────>│            │            │
+   │            │            │            │            │            │
+   │            │            │            │ 11.向Apple验证receipt   │
+   │            │            │            │ ───────────────────────>│
+   │            │            │            │            │            │
+   │            │            │            │ 12.返回验证结果         │
+   │            │            │            │ <───────────────────────│
+   │            │            │            │            │            │
+   │            │            │            │ 13.创建/更新订单        │
+   │            │            │            │ ──────────────────────> │
+   │            │            │            │            │            │
+   │            │            │            │            │ 14.开通会员│
+   │            │            │            │            │ ──────────>│
+   │            │            │            │            │            │
+   │ 15.返回验证成功         │            │            │            │
+   │ <─────────────────────────────────────│            │            │
+   │            │            │            │            │            │
+   │ 16.finishTransaction   │            │            │            │
+   │ ─────────>│            │            │            │            │
+   │            │            │            │            │            │
+   │            │ 17.完成交易│            │            │            │
+   │            │ ───────────────────────────────────>│            │
+   │            │            │            │            │            │
+```
+
+---
+
+## 三、订单状态机设计
+
+### 3.1 订单状态流转图
+
+```
+                                    ┌─────────────┐
+                                    │   CREATED   │
+                                    │   (已创建)  │
+                                    └──────┬──────┘
+                                           │
+                              ┌────────────┴────────────┐
+                              │                         │
+                              ▼                         ▼
+                    ┌─────────────────┐      ┌─────────────────┐
+                    │    PENDING      │      │    EXPIRED      │
+                    │   (待支付)      │      │   (已过期)      │
+                    └────────┬────────┘      └─────────────────┘
+                             │                       ▲
+              ┌──────────────┼──────────────┐       │
+              │              │              │       │
+              ▼              ▼              ▼       │(超时未支付)
+    ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+    │   PAYING    │  │   FAILED    │  │  CANCELLED  │
+    │  (支付中)   │  │  (支付失败) │  │  (已取消)   │
+    └──────┬──────┘  └─────────────┘  └─────────────┘
+           │                ▲
+           │                │(支付失败)
+           ▼                │
+    ┌─────────────────────────────┐
+    │           PAID              │
+    │         (已支付)            │
+    └──────────────┬──────────────┘
+                   │
+        ┌──────────┴──────────┐
+        │                     │
+        ▼                     ▼
+┌─────────────────┐  ┌─────────────────┐
+│   COMPLETED     │  │   REFUNDING     │
+│   (已完成)      │  │   (退款中)      │
+│   会员已开通    │  └────────┬────────┘
+└─────────────────┘           │
+                              ▼
+                    ┌─────────────────┐
+                    │    REFUNDED     │
+                    │   (已退款)      │
+                    └─────────────────┘
+```
+
+### 3.2 状态定义与规则
+
+```go
+// internal/model/order.go
+
+package model
+
+type OrderStatus string
+
+const (
+    OrderStatusCreated   OrderStatus = "created"    // 已创建
+    OrderStatusPending   OrderStatus = "pending"    // 待支付
+    OrderStatusPaying    OrderStatus = "paying"     // 支付中
+    OrderStatusPaid      OrderStatus = "paid"       // 已支付
+    OrderStatusCompleted OrderStatus = "completed"  // 已完成
+    OrderStatusFailed    OrderStatus = "failed"     // 支付失败
+    OrderStatusCancelled OrderStatus = "cancelled"  // 已取消
+    OrderStatusExpired   OrderStatus = "expired"    // 已过期
+    OrderStatusRefunding OrderStatus = "refunding"  // 退款中
+    OrderStatusRefunded  OrderStatus = "refunded"   // 已退款
+)
+
+// 状态转换规则
+var validTransitions = map[OrderStatus][]OrderStatus{
+    OrderStatusCreated:   {OrderStatusPending, OrderStatusCancelled},
+    OrderStatusPending:   {OrderStatusPaying, OrderStatusExpired, OrderStatusCancelled},
+    OrderStatusPaying:    {OrderStatusPaid, OrderStatusFailed, OrderStatusPending},
+    OrderStatusPaid:      {OrderStatusCompleted, OrderStatusRefunding},
+    OrderStatusCompleted: {OrderStatusRefunding},
+    OrderStatusFailed:    {OrderStatusPending}, // 可重试
+    OrderStatusRefunding: {OrderStatusRefunded},
+    // 终态：Expired, Cancelled, Refunded 不可转换
+}
+
+// CanTransitionTo 检查状态转换是否合法
+func (s OrderStatus) CanTransitionTo(target OrderStatus) bool {
+    allowed, ok := validTransitions[s]
+    if !ok {
+        return false
+    }
+    for _, status := range allowed {
+        if status == target {
+            return true
+        }
+    }
+    return false
+}
+```
+
+---
+
+## 四、详细API接口设计
+
+### 4.1 订单相关接口
+
+```yaml
+# =====================================
+# 订单支付接口 - OpenAPI 3.0 规范
+# =====================================
+
+paths:
+  /api/v1/membership/plans:
+    get:
+      summary: 获取会员套餐列表
+      tags:
+        - 会员订阅
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      current_plan:
+                        $ref: '#/components/schemas/CurrentPlan'
+                      plans:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/MemberPlan'
+                      promotions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Promotion'
+
+  /api/v1/orders/create:
+    post:
+      summary: 创建订单
+      tags:
+        - 订单管理
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - plan_id
+                - payment_method
+              properties:
+                plan_id:
+                  type: string
+                  description: 套餐ID
+                  example: "plan_ai_yearly"
+                payment_method:
+                  type: string
+                  enum: [wechat, alipay, apple_iap]
+                  description: 支付方式
+                promo_code:
+                  type: string
+                  description: 优惠码（可选）
+                  example: "NEWYEAR2024"
+      responses:
+        200:
+          description: 订单创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResponse'
+
+  /api/v1/orders/{order_id}/status:
+    get:
+      summary: 查询订单状态
+      tags:
+        - 订单管理
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderStatus'
+
+  /api/v1/orders/{order_id}/cancel:
+    post:
+      summary: 取消订单
+      tags:
+        - 订单管理
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: 取消成功
+
+  /api/v1/payments/wechat/callback:
+    post:
+      summary: 微信支付回调
+      tags:
+        - 支付回调
+      description: 微信服务器调用，验证签名后处理
+      requestBody:
+        content:
+          application/xml:
+            schema:
+              type: string
+      responses:
+        200:
+          description: 处理结果
+          content:
+            application/xml:
+              schema:
+                type: string
+                example: "<xml><return_code>SUCCESS</return_code></xml>"
+
+  /api/v1/payments/alipay/callback:
+    post:
+      summary: 支付宝支付回调
+      tags:
+        - 支付回调
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+      responses:
+        200:
+          description: 处理结果
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "success"
+
+  /api/v1/payments/apple/verify:
+    post:
+      summary: Apple内购票据验证
+      tags:
+        - 支付验证
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - receipt_data
+                - product_id
+              properties:
+                receipt_data:
+                  type: string
+                  description: Base64编码的收据数据
+                product_id:
+                  type: string
+                  description: 商品ID
+                transaction_id:
+                  type: string
+                  description: 交易ID
+      responses:
+        200:
+          description: 验证成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppleVerifyResponse'
+
+components:
+  schemas:
+    MemberPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "plan_ai_yearly"
+        name:
+          type: string
+          example: "AI智能会员"
+        description:
+          type: string
+        price:
+          type: number
+          example: 299
+        original_price:
+          type: number
+          example: 599
+        duration_days:
+          type: integer
+          example: 365
+        privileges:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              icon:
+                type: string
+        is_recommended:
+          type: boolean
+        tag:
+          type: string
+          example: "最受欢迎"
+        apple_product_id:
+          type: string
+          description: iOS内购商品ID
+          example: "com.lionenglish.ai_yearly"
+
+    CreateOrderResponse:
+      type: object
+      properties:
+        order_id:
+          type: string
+          example: "ord_20240115_001"
+        plan_name:
+          type: string
+        original_price:
+          type: number
+        discount:
+          type: number
+        final_price:
+          type: number
+        payment_method:
+          type: string
+        payment_params:
+          type: object
+          description: 支付参数，根据支付方式不同而不同
+          oneOf:
+            - $ref: '#/components/schemas/WechatPayParams'
+            - $ref: '#/components/schemas/AlipayParams'
+        expire_at:
+          type: string
+          format: date-time
+          description: 订单过期时间
+
+    WechatPayParams:
+      type: object
+      description: 微信支付参数
+      properties:
+        appid:
+          type: string
+        partnerid:
+          type: string
+        prepayid:
+          type: string
+        package:
+          type: string
+        noncestr:
+          type: string
+        timestamp:
+          type: string
+        sign:
+          type: string
+
+    AlipayParams:
+      type: object
+      description: 支付宝支付参数
+      properties:
+        order_string:
+          type: string
+          description: 调起支付宝的完整字符串
+
+    OrderStatus:
+      type: object
+      properties:
+        order_id:
+          type: string
+        status:
+          type: string
+          enum: [pending, paying, paid, completed, failed, cancelled, expired, refunding, refunded]
+        paid_at:
+          type: string
+          format: date-time
+        vip_info:
+          type: object
+          properties:
+            level:
+              type: string
+            expire_at:
+              type: string
+              format: date-time
+```
+
+---
+
+## 五、后端核心实现
+
+### 5.1 微信支付实现
+
+```go
+// internal/payment/wechat.go
+
+package payment
+
+import (
+    "context"
+    "crypto/md5"
+    "encoding/hex"
+    "encoding/xml"
+    "fmt"
+    "net/http"
+    "sort"
+    "strings"
+    "time"
+)
+
+type WechatPay struct {
+    AppID     string
+    MchID     string
+    APIKey    string
+    NotifyURL string
+    client    *http.Client
+}
+
+type UnifiedOrderRequest struct {
+    AppID          string `xml:"appid"`
+    MchID          string `xml:"mch_id"`
+    NonceStr       string `xml:"nonce_str"`
+    Sign           string `xml:"sign"`
+    Body           string `xml:"body"`
+    OutTradeNo     string `xml:"out_trade_no"`
+    TotalFee       int    `xml:"total_fee"` // 单位：分
+    SpbillCreateIP string `xml:"spbill_create_ip"`
+    NotifyURL      string `xml:"notify_url"`
+    TradeType      string `xml:"trade_type"` // APP
+}
+
+type UnifiedOrderResponse struct {
+    ReturnCode string `xml:"return_code"`
+    ReturnMsg  string `xml:"return_msg"`
+    ResultCode string `xml:"result_code"`
+    PrepayID   string `xml:"prepay_id"`
+}
+
+type AppPayParams struct {
+    AppID     string `json:"appid"`
+    PartnerID string `json:"partnerid"`
+    PrepayID  string `json:"prepayid"`
+    Package   string `json:"package"`
+    NonceStr  string `json:"noncestr"`
+    Timestamp string `json:"timestamp"`
+    Sign      string `json:"sign"`
+}
+
+// CreateOrder 统一下单
+func (w *WechatPay) CreateOrder(ctx context.Context, order *Order) (*AppPayParams, error) {
+    // 1. 构建请求参数
+    req := &UnifiedOrderRequest{
+        AppID:          w.AppID,
+        MchID:          w.MchID,
+        NonceStr:       generateNonceStr(),
+        Body:           order.ProductName,
+        OutTradeNo:     order.OrderID,
+        TotalFee:       int(order.Amount * 100), // 元转分
+        SpbillCreateIP: order.ClientIP,
+        NotifyURL:      w.NotifyURL,
+        TradeType:      "APP",
+    }
+    
+    // 2. 签名
+    req.Sign = w.sign(req)
+    
+    // 3. 发送请求
+    xmlData, _ := xml.Marshal(req)
+    resp, err := w.client.Post(
+        "https://api.mch.weixin.qq.com/pay/unifiedorder",
+        "application/xml",
+        strings.NewReader(string(xmlData)),
+    )
+    if err != nil {
+        return nil, fmt.Errorf("request failed: %w", err)
+    }
+    defer resp.Body.Close()
+    
+    // 4. 解析响应
+    var result UnifiedOrderResponse
+    if err := xml.NewDecoder(resp.Body).Decode(&result); err != nil {
+        return nil, fmt.Errorf("decode response failed: %w", err)
+    }
+    
+    if result.ReturnCode != "SUCCESS" || result.ResultCode != "SUCCESS" {
+        return nil, fmt.Errorf("wechat error: %s", result.ReturnMsg)
+    }
+    
+    // 5. 构建APP支付参数
+    timestamp := fmt.Sprintf("%d", time.Now().Unix())
+    nonceStr := generateNonceStr()
+    
+    params := &AppPayParams{
+        AppID:     w.AppID,
+        PartnerID: w.MchID,
+        PrepayID:  result.PrepayID,
+        Package:   "Sign=WXPay",
+        NonceStr:  nonceStr,
+        Timestamp: timestamp,
+    }
+    
+    // 6. 二次签名
+    params.Sign = w.signAppParams(params)
+    
+    return params, nil
+}
+
+// HandleCallback 处理支付回调
+func (w *WechatPay) HandleCallback(ctx context.Context, body []byte) (*CallbackResult, error) {
+    // 1. 解析XML
+    var notify WechatNotify
+    if err := xml.Unmarshal(body, &notify); err != nil {
+        return nil, fmt.Errorf("parse notify failed: %w", err)
+    }
+    
+    // 2. 验证签名
+    if !w.verifySign(&notify) {
+        return nil, fmt.Errorf("invalid signature")
+    }
+    
+    // 3. 验证业务结果
+    if notify.ReturnCode != "SUCCESS" || notify.ResultCode != "SUCCESS" {
+        return &CallbackResult{
+            Success: false,
+            OrderID: notify.OutTradeNo,
+            Message: notify.ReturnMsg,
+        }, nil
+    }
+    
+    return &CallbackResult{
+        Success:       true,
+        OrderID:       notify.OutTradeNo,
+        TransactionID: notify.TransactionID,
+        Amount:        float64(notify.TotalFee) / 100, // 分转元
+        PaidAt:        parseWechatTime(notify.TimeEnd),
+    }, nil
+}
+
+// sign 生成签名
+func (w *WechatPay) sign(data interface{}) string {
+    // 将结构体转为map
+    params := structToMap(data)
+    
+    // 按key排序
+    keys := make([]string, 0, len(params))
+    for k := range params {
+        if k != "sign" && params[k] != "" {
+            keys = append(keys, k)
+        }
+    }
+    sort.Strings(keys)
+    
+    // 拼接字符串
+    var buf strings.Builder
+    for _, k := range keys {
+        buf.WriteString(k)
+        buf.WriteString("=")
+        buf.WriteString(params[k])
+        buf.WriteString("&")
+    }
+    buf.WriteString("key=")
+    buf.WriteString(w.APIKey)
+    
+    // MD5签名
+    hash := md5.Sum([]byte(buf.String()))
+    return strings.ToUpper(hex.EncodeToString(hash[:]))
+}
+```
+
+### 5.2 订单服务实现
+
+```go
+// internal/service/order.go
+
+package service
+
+import (
+    "context"
+    "time"
+)
+
+type OrderService struct {
+    repo        *repository.OrderRepository
+    paymentSvc  *PaymentService
+    memberSvc   *MemberService
+    cache       *redis.Client
+    mq          *rabbitmq.Channel
+}
+
+// CreateOrder 创建订单
+func (s *OrderService) CreateOrder(ctx context.Context, req *CreateOrderRequest) (*CreateOrderResponse, error) {
+    // 1. 获取套餐信息
+    plan, err := s.repo.GetPlan(ctx, req.PlanID)
+    if err != nil {
+        return nil, fmt.Errorf("get plan failed: %w", err)
+    }
+    
+    // 2. 计算价格（含优惠）
+    priceResult, err := s.calculatePrice(ctx, plan, req.PromoCode, req.UserID)
+    if err != nil {
+        return nil, fmt.Errorf("calculate price failed: %w", err)
+    }
+    
+    // 3. 生成订单号
+    orderID := s.generateOrderID()
+    
+    // 4. 创建订单记录
+    order := &model.Order{
+        ID:            orderID,
+        UserID:        req.UserID,
+        PlanID:        req.PlanID,
+        PlanName:      plan.Name,
+        OriginalPrice: priceResult.OriginalPrice,
+        Discount:      priceResult.Discount,
+        FinalPrice:    priceResult.FinalPrice,
+        PromoCode:     req.PromoCode,
+        PaymentMethod: req.PaymentMethod,
+        Status:        model.OrderStatusPending,
+        ExpireAt:      time.Now().Add(30 * time.Minute), // 30分钟有效期
+        CreatedAt:     time.Now(),
+    }
+    
+    if err := s.repo.CreateOrder(ctx, order); err != nil {
+        return nil, fmt.Errorf("create order failed: %w", err)
+    }
+    
+    // 5. 调用支付渠道获取支付参数
+    payParams, err := s.paymentSvc.CreatePayment(ctx, &PaymentRequest{
+        OrderID:       orderID,
+        Amount:        priceResult.FinalPrice,
+        ProductName:   plan.Name,
+        PaymentMethod: req.PaymentMethod,
+        ClientIP:      req.ClientIP,
+    })
+    if err != nil {
+        // 更新订单状态为失败
+        s.repo.UpdateOrderStatus(ctx, orderID, model.OrderStatusFailed)
+        return nil, fmt.Errorf("create payment failed: %w", err)
+    }
+    
+    // 6. 设置订单过期定时任务
+    s.scheduleOrderExpire(orderID, 30*time.Minute)
+    
+    return &CreateOrderResponse{
+        OrderID:       orderID,
+        PlanName:      plan.Name,
+        OriginalPrice: priceResult.OriginalPrice,
+        Discount:      priceResult.Discount,
+        FinalPrice:    priceResult.FinalPrice,
+        PaymentMethod: req.PaymentMethod,
+        PaymentParams: payParams,
+        ExpireAt:      order.ExpireAt,
+    }, nil
+}
+
+// HandlePaymentCallback 处理支付回调
+func (s *OrderService) HandlePaymentCallback(ctx context.Context, result *CallbackResult) error {
+    // 1. 幂等性检查
+    processed, err := s.checkIdempotent(ctx, result.OrderID, result.TransactionID)
+    if err != nil {
+        return err
+    }
+    if processed {
+        log.Info("callback already processed", "order_id", result.OrderID)
+        return nil
+    }
+    
+    // 2. 获取订单
+    order, err := s.repo.GetOrder(ctx, result.OrderID)
+    if err != nil {
+        return fmt.Errorf("get order failed: %w", err)
+    }
+    
+    // 3. 验证金额
+    if result.Amount != order.FinalPrice {
+        log.Error("amount mismatch", 
+            "order_id", result.OrderID,
+            "expected", order.FinalPrice,
+            "actual", result.Amount,
+        )
+        return fmt.Errorf("amount mismatch")
+    }
+    
+    // 4. 更新订单状态
+    if !result.Success {
+        return s.repo.UpdateOrderStatus(ctx, result.OrderID, model.OrderStatusFailed)
+    }
+    
+    err = s.repo.UpdateOrderPaid(ctx, result.OrderID, &model.OrderPaidInfo{
+        Status:        model.OrderStatusPaid,
+        TransactionID: result.TransactionID,
+        PaidAt:        result.PaidAt,
+    })
+    if err != nil {
+        return fmt.Errorf("update order failed: %w", err)
+    }
+    
+    // 5. 开通会员（异步）
+    s.mq.Publish("member.activate", &MemberActivateMessage{
+        UserID:    order.UserID,
+        OrderID:   order.ID,
+        PlanID:    order.PlanID,
+        PaidAt:    result.PaidAt,
+    })
+    
+    // 6. 标记幂等
+    s.markIdempotent(ctx, result.OrderID, result.TransactionID)
+    
+    return nil
+}
+
+// checkIdempotent 幂等性检查
+func (s *OrderService) checkIdempotent(ctx context.Context, orderID, transactionID string) (bool, error) {
+    key := fmt.Sprintf("payment:callback:%s:%s", orderID, transactionID)
+    result, err := s.cache.SetNX(ctx, key, "1", 24*time.Hour).Result()
+    if err != nil {
+        return false, err
+    }
+    return !result, nil // SetNX返回false表示key已存在，即已处理过
+}
+
+// generateOrderID 生成订单号
+func (s *OrderService) generateOrderID() string {
+    // 格式：ord_年月日_随机6位
+    return fmt.Sprintf("ord_%s_%s", 
+        time.Now().Format("20060102"),
+        randomString(6),
+    )
+}
+
+// scheduleOrderExpire 设置订单过期
+func (s *OrderService) scheduleOrderExpire(orderID string, duration time.Duration) {
+    // 延迟队列处理订单过期
+    s.mq.PublishDelay("order.expire", &OrderExpireMessage{
+        OrderID: orderID,
+    }, duration)
+}
+```
+
+### 5.3 会员开通服务
+
+```go
+// internal/service/member.go
+
+package service
+
+type MemberService struct {
+    repo  *repository.MemberRepository
+    cache *redis.Client
+}
+
+// ActivateMembership 开通会员
+func (s *MemberService) ActivateMembership(ctx context.Context, msg *MemberActivateMessage) error {
+    // 1. 获取套餐信息
+    plan, err := s.repo.GetPlan(ctx, msg.PlanID)
+    if err != nil {
+        return fmt.Errorf("get plan failed: %w", err)
+    }
+    
+    // 2. 获取当前会员信息
+    currentMember, _ := s.repo.GetMembership(ctx, msg.UserID)
+    
+    // 3. 计算新的到期时间
+    var startAt, expireAt time.Time
+    if currentMember != nil && currentMember.ExpireAt.After(time.Now()) {
+        // 如果还有剩余会员时间，则累加
+        startAt = currentMember.ExpireAt
+        expireAt = startAt.AddDate(0, 0, plan.DurationDays)
+    } else {
+        startAt = msg.PaidAt
+        expireAt = startAt.AddDate(0, 0, plan.DurationDays)
+    }
+    
+    // 4. 创建/更新会员记录
+    membership := &model.Membership{
+        ID:       generateID(),
+        UserID:   msg.UserID,
+        PlanID:   msg.PlanID,
+        Level:    plan.Level,
+        StartAt:  startAt,
+        ExpireAt: expireAt,
+        Status:   "active",
+    }
+    
+    if err := s.repo.UpsertMembership(ctx, membership); err != nil {
+        return fmt.Errorf("upsert membership failed: %w", err)
+    }
+    
+    // 5. 更新订单状态为已完成
+    if err := s.repo.UpdateOrderStatus(ctx, msg.OrderID, model.OrderStatusCompleted); err != nil {
+        log.Error("update order status failed", "order_id", msg.OrderID, "error", err)
+    }
+    
+    // 6. 清除用户缓存
+    s.cache.Del(ctx, fmt.Sprintf("user:membership:%s", msg.UserID))
+    
+    // 7. 发送通知
+    s.sendActivationNotify(ctx, msg.UserID, plan.Name, expireAt)
+    
+    return nil
+}
+```
+
+---
+
+## 六、安全与异常处理
+
+### 6.1 安全措施清单
+
+| 安全措施 | 实现方式 | 说明 |
+|----------|----------|------|
+| **签名验证** | MD5/RSA签名 | 所有回调必须验签 |
+| **幂等性** | Redis分布式锁 | 防止重复处理 |
+| **金额校验** | 订单金额比对 | 回调金额必须匹配 |
+| **订单过期** | 延迟队列 | 超时自动取消 |
+| **HTTPS** | TLS 1.2+ | 传输层加密 |
+| **参数校验** | 白名单验证 | 防注入攻击 |
+| **日志审计** | 全链路日志 | 可追溯 |
+| **告警监控** | Prometheus | 异常实时告警 |
+
+### 6.2 异常处理流程
+
+```go
+// internal/payment/retry.go
+
+// RetryablePaymentError 可重试的支付错误
+type RetryablePaymentError struct {
+    Code    string
+    Message string
+}
+
+// HandlePaymentError 支付错误处理
+func HandlePaymentError(err error, orderID string) {
+    switch e := err.(type) {
+    case *RetryablePaymentError:
+        // 可重试错误：网络超时、服务暂时不可用
+        // 加入重试队列
+        mq.PublishDelay("payment.retry", &RetryMessage{
+            OrderID: orderID,
+            Retry:   1,
+            MaxRetry: 3,
+        }, 30*time.Second)
+        
+    case *FatalPaymentError:
+        // 致命错误：参数错误、余额不足
+        // 直接标记失败
+        repo.UpdateOrderStatus(orderID, OrderStatusFailed)
+        notify.SendFailureNotify(orderID, e.Message)
+        
+    default:
+        // 未知错误：记录日志，人工处理
+        log.Error("unknown payment error", "order_id", orderID, "error", err)
+        alert.Send("支付异常", fmt.Sprintf("订单%s出现未知错误", orderID))
+    }
+}
+```
+
+### 6.3 对账流程
+
+```
+每日对账流程
+├── 1. 凌晨2:00 下载对账文件
+│   ├── 微信：下载前一天账单
+│   └── 支付宝：下载前一天账单
+├── 2. 解析对账文件
+│   └── 解析交易明细
+├── 3. 与本地订单比对
+│   ├── 检查金额是否一致
+│   ├── 检查状态是否一致
+│   └── 记录差异项
+├── 4. 异常处理
+│   ├── 长款（平台多收）：检查是否漏发货
+│   └── 短款（平台少收）：检查是否重复发货
+└── 5. 生成对账报告
+    └── 发送给财务/运营
+```
+
+---
+
+## 七、数据库表设计
+
+```sql
+-- 订单表
+CREATE TABLE orders (
+    id VARCHAR(32) PRIMARY KEY COMMENT '订单号',
+    user_id VARCHAR(32) NOT NULL COMMENT '用户ID',
+    plan_id VARCHAR(32) NOT NULL COMMENT '套餐ID',
+    plan_name VARCHAR(100) NOT NULL COMMENT '套餐名称',
+    original_price DECIMAL(10,2) NOT NULL COMMENT '原价',
+    discount DECIMAL(10,2) DEFAULT 0 COMMENT '优惠金额',
+    final_price DECIMAL(10,2) NOT NULL COMMENT '实付金额',
+    promo_code VARCHAR(32) COMMENT '优惠码',
+    payment_method VARCHAR(20) NOT NULL COMMENT '支付方式',
+    transaction_id VARCHAR(64) COMMENT '第三方交易号',
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT '订单状态',
+    expire_at DATETIME COMMENT '订单过期时间',
+    paid_at DATETIME COMMENT '支付时间',
+    completed_at DATETIME COMMENT '完成时间',
+    refund_at DATETIME COMMENT '退款时间',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_transaction_id (transaction_id),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表';
+
+-- 支付流水表
+CREATE TABLE payment_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id VARCHAR(32) NOT NULL COMMENT '订单号',
+    action VARCHAR(20) NOT NULL COMMENT '操作类型:create/callback/query',
+    payment_method VARCHAR(20) NOT NULL COMMENT '支付方式',
+    request_data TEXT COMMENT '请求数据',
+    response_data TEXT COMMENT '响应数据',
+    status VARCHAR(20) COMMENT '状态',
+    error_msg TEXT COMMENT '错误信息',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_order_id (order_id),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付流水表';
+
+-- 会员表
+CREATE TABLE memberships (
+    id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL COMMENT '用户ID',
+    plan_id VARCHAR(32) NOT NULL COMMENT '套餐ID',
+    level VARCHAR(20) NOT NULL COMMENT '会员等级',
+    start_at DATETIME NOT NULL COMMENT '开始时间',
+    expire_at DATETIME NOT NULL COMMENT '到期时间',
+    status VARCHAR(20) DEFAULT 'active' COMMENT '状态',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_id (user_id),
+    INDEX idx_expire_at (expire_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='会员表';
+
+-- 对账记录表
+CREATE TABLE reconciliation_records (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    date DATE NOT NULL COMMENT '对账日期',
+    payment_method VARCHAR(20) NOT NULL COMMENT '支付渠道',
+    total_orders INT DEFAULT 0 COMMENT '总订单数',
+    total_amount DECIMAL(12,2) DEFAULT 0 COMMENT '总金额',
+    matched_orders INT DEFAULT 0 COMMENT '匹配订单数',
+    mismatched_orders INT DEFAULT 0 COMMENT '不匹配订单数',
+    status VARCHAR(20) DEFAULT 'pending' COMMENT '对账状态',
+    report_url VARCHAR(255) COMMENT '报告地址',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_date_method (date, payment_method)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='对账记录表';
+```
+
+
